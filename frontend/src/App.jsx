@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 const API_BASE_URL = "http://127.0.0.1:8000";
 const THEME_STORAGE_KEY = "wc26-theme";
 const DEFAULT_SIMULATION_COUNT = 500;
+const TROPHY_PNG_URL = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f3c6.png";
 
 const CODE_TO_ISO = {
   ALG: "dz",
@@ -85,6 +86,60 @@ function formatPercent(value) {
 
 function formatDecimal(value) {
   return Number(value ?? 0).toFixed(2);
+}
+
+function formatPredictionScore(prediction) {
+  if (!prediction) {
+    return "VS";
+  }
+
+  const { sample_score: score } = prediction;
+  const baseScore = formatMatchScore(score);
+
+  return baseScore;
+}
+
+function getPredictionAdvancingTeam(prediction) {
+  if (!prediction || prediction.stage !== "knockout") {
+    return null;
+  }
+
+  return prediction.sample_score.winner === prediction.home_team.code
+    ? prediction.home_team
+    : prediction.away_team;
+}
+
+function getPredictionSampleWinnerCode(prediction) {
+  if (!prediction) {
+    return null;
+  }
+
+  if (prediction.sample_score.winner) {
+    return prediction.sample_score.winner;
+  }
+
+  if (prediction.sample_score.home_goals > prediction.sample_score.away_goals) {
+    return prediction.home_team.code;
+  }
+
+  if (prediction.sample_score.away_goals > prediction.sample_score.home_goals) {
+    return prediction.away_team.code;
+  }
+
+  return null;
+}
+
+function formatMatchScore(match) {
+  if (!match || !("home_goals" in match) || !("away_goals" in match)) {
+    return null;
+  }
+
+  const baseScore = `${match.home_goals} - ${match.away_goals}`;
+  if (match.decision === "penalties" && match.penalties) {
+    return `${baseScore} (${match.penalties.home}-${match.penalties.away} pens)`;
+  }
+
+  return baseScore;
 }
 
 function SunIcon() {
@@ -190,9 +245,9 @@ function StatCard({ label, value, children }) {
   );
 }
 
-function TeamRow({ teamCode, teamName, emphasized, dimmed, score, winner }) {
+function TeamRow({ teamCode, teamName, emphasized, dimmed, score, winner, align = "left" }) {
   return (
-    <div className={`fixture-team-row ${winner ? "winner" : ""} ${dimmed ? "dimmed" : ""}`}>
+    <div className={`fixture-team-row fixture-team-${align} ${winner ? "winner" : ""} ${dimmed ? "dimmed" : ""}`}>
       <div className="fixture-team-meta">
         <FlagImg code={teamCode} size="sm" alt={`${teamName} flag`} />
         <span className={emphasized ? "team-strong" : ""}>{teamName}</span>
@@ -225,16 +280,19 @@ function DashboardBar({ entry, index }) {
   );
 }
 
-function BracketMatch({ match, getTeam }) {
+function BracketMatch({ match, getTeam, className = "" }) {
   if (!match) {
     return <div className="bracket-placeholder">Match pending</div>;
   }
 
   const home = getTeam(match.home_team);
   const away = getTeam(match.away_team);
+  const penaltyScore = match.decision === "penalties" && match.penalties
+    ? `Pens ${match.penalties.home}-${match.penalties.away}`
+    : null;
 
   return (
-    <div className="bracket-match-card">
+    <div className={`bracket-match-card ${className}`.trim()}>
       <div className={`bracket-team-row ${match.winner === match.home_team ? "winner" : ""}`}>
         <div className="bracket-team-meta">
           <FlagImg code={match.home_team} size="sm" alt={`${home?.name ?? match.home_team} flag`} />
@@ -249,6 +307,7 @@ function BracketMatch({ match, getTeam }) {
         </div>
         {"away_goals" in match ? <strong>{match.away_goals}</strong> : <span className="score-empty">-</span>}
       </div>
+      {penaltyScore ? <div className="bracket-penalty-note">{penaltyScore}</div> : null}
     </div>
   );
 }
@@ -281,7 +340,7 @@ function BracketTreeSide({ tree, matchesById, getTeam, side }) {
     },
     {
       key: "qf",
-      label: "Quarter Final",
+      label: "Quarter-Final",
       className: "bracket-qf",
       matches: tree.quarterfinals.map((id, index) => ({
         id,
@@ -292,7 +351,7 @@ function BracketTreeSide({ tree, matchesById, getTeam, side }) {
     },
     {
       key: "sf",
-      label: "Semi Final",
+      label: "Semi-Final",
       className: "bracket-sf",
       matches: [
         {
@@ -320,7 +379,9 @@ function BracketTreeSide({ tree, matchesById, getTeam, side }) {
                   gridRow: `${item.rowStart} / ${item.rowEnd}`,
                 }}
               >
+                <span className="bracket-connector bracket-connector-in" aria-hidden="true" />
                 <BracketMatch match={item.match} getTeam={getTeam} />
+                <span className="bracket-connector bracket-connector-out" aria-hidden="true" />
               </div>
             ))}
           </div>
@@ -338,28 +399,42 @@ function TournamentBracket({ bracket, thirdPlaceMatch, getTeam }) {
     ...bracket.semifinals,
   ];
   const matchesById = Object.fromEntries(allMatches.map((match) => [match.match_id, match]));
+  const finalMatch = bracket.final?.[0];
+  const champion = finalMatch?.winner ? getTeam(finalMatch.winner) : null;
 
   return (
     <div className="bracketology-grid">
       <BracketTreeSide tree={LEFT_BRACKET_TREE} matchesById={matchesById} getTeam={getTeam} side="left" />
 
       <div className="bracket-finals-core">
-        <div>
-          <div className="bracket-column-title">FINAL</div>
-          <div className="bracket-finals-stack">
-            {bracket.final.map((match) => (
-              <BracketMatch key={match.match_id} match={match} getTeam={getTeam} />
-            ))}
+        {champion ? (
+          <div className="champion-banner">
+            <div className="champion-banner-label">2026 World Cup Champion</div>
+            <div className="champion-banner-body">
+              <img src={TROPHY_PNG_URL} alt="" className="trophy-png" />
+              <FlagImg code={champion.code} size="lg" alt={`${champion.name} flag`} />
+              <strong className="champion-banner-name">{champion.name}</strong>
+            </div>
           </div>
-        </div>
-        <div>
-          <div className="bracket-column-title third-place-title">THIRD PLACE</div>
-          <div className="bracket-finals-stack">
-            {thirdPlaceMatch ? (
-              <BracketMatch match={thirdPlaceMatch} getTeam={getTeam} />
-            ) : (
-              <div className="bracket-placeholder">Awaiting semifinal results</div>
-            )}
+        ) : null}
+        <div className="bracket-finals-matches">
+          <div>
+            <div className="bracket-column-title">FINAL</div>
+            <div className="bracket-finals-stack">
+              {bracket.final.map((match) => (
+                <BracketMatch key={match.match_id} match={match} getTeam={getTeam} className="world-cup-final-card" />
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="bracket-column-title third-place-title">THIRD PLACE</div>
+            <div className="bracket-finals-stack">
+              {thirdPlaceMatch ? (
+                <BracketMatch match={thirdPlaceMatch} getTeam={getTeam} />
+              ) : (
+                <div className="bracket-placeholder">Awaiting semifinal results</div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -385,6 +460,7 @@ function GroupModal({ group, onClose, getTeam }) {
     return null;
   }
 
+  const qualifiedCodes = new Set(group.qualified_team_codes ?? []);
   const groupedMatches = GROUP_MATCHDAY_LABELS.map((label, index) => ({
     label,
     matches: (group.matches ?? []).slice(index * 2, index * 2 + 2),
@@ -420,7 +496,7 @@ function GroupModal({ group, onClose, getTeam }) {
               {group.table.map((row, index) => {
                 const team = getTeam(row.team_code);
                 return (
-                  <tr key={row.team_code} className={index < 2 ? "qualified" : ""}>
+                  <tr key={row.team_code} className={qualifiedCodes.has(row.team_code) || index < 2 ? "qualified" : ""}>
                     <td>
                       <div className="group-modal-team">
                         <FlagImg code={row.team_code} size="sm" alt={`${team?.name ?? row.team_code} flag`} />
@@ -468,6 +544,7 @@ function GroupModal({ group, onClose, getTeam }) {
                         emphasized={isDraw || match.away_goals > match.home_goals}
                         dimmed={!isDraw && match.away_goals < match.home_goals}
                         winner={match.away_goals > match.home_goals}
+                        align="right"
                       />
                     </div>
                   );
@@ -482,7 +559,7 @@ function GroupModal({ group, onClose, getTeam }) {
 }
 
 function App() {
-  const [theme, setTheme] = useState(() => localStorage.getItem(THEME_STORAGE_KEY) || "dark");
+  const [theme, setTheme] = useState(() => localStorage.getItem(THEME_STORAGE_KEY) || "light");
   const [groups, setGroups] = useState([]);
   const [teams, setTeams] = useState([]);
   const [prediction, setPrediction] = useState(null);
@@ -587,6 +664,8 @@ function App() {
           home_goals: homeGoals,
           away_goals: awayGoals,
           winner,
+          decision: data.sample_score.decision,
+          penalties: data.sample_score.penalties,
         });
       } catch {
         setThirdPlaceMatch({
@@ -685,7 +764,10 @@ function App() {
       setError("Simulate a tournament to see group match results.");
       return;
     }
-    setSelectedGroup(group);
+    setSelectedGroup({
+      ...group,
+      qualified_team_codes: sampleTournament.qualified_for_round_of_32 ?? [],
+    });
   }
 
   function handleGroupCardKeydown(event, group) {
@@ -696,9 +778,16 @@ function App() {
   }
 
   const displayedGroups = sampleTournament?.group_results ?? groups;
-  const probabilityRows = simulationData?.probabilities?.slice(0, 10) ?? [];
+  const qualifiedGroupCodes = useMemo(
+    () => new Set(sampleTournament?.qualified_for_round_of_32 ?? []),
+    [sampleTournament],
+  );
+  const probabilityRows = simulationData?.probabilities?.slice(0, 12) ?? [];
   const homeTeam = getTeam(predictionForm.home_team_code);
   const awayTeam = getTeam(predictionForm.away_team_code);
+  const isKnockoutPrediction = prediction?.stage === "knockout";
+  const predictionAdvancingTeam = getPredictionAdvancingTeam(prediction);
+  const predictionWinnerCode = getPredictionSampleWinnerCode(prediction);
   const sampleAverageGoals =
     sampleTournament?.total_goals && sampleTournament?.total_matches
       ? sampleTournament.total_goals / sampleTournament.total_matches
@@ -907,17 +996,15 @@ function App() {
             </label>
 
             <div className="vs-card">
-              <div className="vs-team">
+              <div className={`vs-team ${predictionWinnerCode === homeTeam?.code ? "vs-team-winner" : ""}`}>
                 <FlagImg code={homeTeam?.code} size="lg" alt={`${homeTeam?.name ?? ""} flag`} />
                 <div className="vs-name">{homeTeam?.name}</div>
                 <div className="vs-code">{homeTeam?.code}</div>
               </div>
               <div className={`vs-pill ${prediction ? "vs-score" : ""}`}>
-                {prediction
-                  ? `${prediction.sample_score.home_goals} - ${prediction.sample_score.away_goals}`
-                  : "VS"}
+                {formatPredictionScore(prediction)}
               </div>
-              <div className="vs-team">
+              <div className={`vs-team ${predictionWinnerCode === awayTeam?.code ? "vs-team-winner" : ""}`}>
                 <FlagImg code={awayTeam?.code} size="lg" alt={`${awayTeam?.name ?? ""} flag`} />
                 <div className="vs-name">{awayTeam?.name}</div>
                 <div className="vs-code">{awayTeam?.code}</div>
@@ -933,7 +1020,9 @@ function App() {
             <div className="predictor-results">
               <div className="result-meta-row">
                 <span className="result-tag">{prediction.stage.toUpperCase()}</span>
-                <span className="result-scoreline">MODEL SNAPSHOT</span>
+                <span className="result-scoreline">
+                  {predictionAdvancingTeam ? `${predictionAdvancingTeam.name} advances` : "MODEL SNAPSHOT"}
+                </span>
               </div>
 
               <div className="metric-pair-grid">
@@ -959,7 +1048,7 @@ function App() {
                   <strong>{formatPercent(prediction.probabilities.home_win)}</strong>
                 </div>
                 <div className="probability-row">
-                  <span>Draw</span>
+                  <span>{isKnockoutPrediction ? "Draw after 90" : "Draw"}</span>
                   <div className="mini-meter">
                     <div className="mini-meter-fill gold" style={{ width: `${prediction.probabilities.draw * 100}%` }} />
                   </div>
@@ -972,6 +1061,30 @@ function App() {
                   </div>
                   <strong>{formatPercent(prediction.probabilities.away_win)}</strong>
                 </div>
+                {isKnockoutPrediction ? (
+                  <>
+                    <div className="probability-row">
+                      <span>{prediction.home_team.name} advance</span>
+                      <div className="mini-meter">
+                        <div
+                          className="mini-meter-fill"
+                          style={{ width: `${prediction.probabilities.home_advance * 100}%` }}
+                        />
+                      </div>
+                      <strong>{formatPercent(prediction.probabilities.home_advance)}</strong>
+                    </div>
+                    <div className="probability-row">
+                      <span>{prediction.away_team.name} advance</span>
+                      <div className="mini-meter">
+                        <div
+                          className="mini-meter-fill muted"
+                          style={{ width: `${prediction.probabilities.away_advance * 100}%` }}
+                        />
+                      </div>
+                      <strong>{formatPercent(prediction.probabilities.away_advance)}</strong>
+                    </div>
+                  </>
+                ) : null}
               </div>
 
               <div className="scoreline-chip-row">
@@ -1039,7 +1152,10 @@ function App() {
                           {group.table.map((row, index) => {
                             const team = getTeam(row.team_code);
                             return (
-                              <tr key={row.team_code} className={index < 2 ? "qualified" : ""}>
+                              <tr
+                                key={row.team_code}
+                                className={index < 2 || qualifiedGroupCodes.has(row.team_code) ? "qualified" : ""}
+                              >
                                 <td>
                                   <div className="group-team-cell">
                                     <FlagImg code={row.team_code} size="sm" alt={`${team?.name ?? row.team_code} flag`} />
@@ -1077,8 +1193,7 @@ function App() {
         </section>
 
         <section className="surface-card full-span bracket-section">
-          <div className="section-kicker">KNOCKOUT BRACKET</div>
-          <h2 className="section-title">Tournament Path</h2>
+          <h2 className="section-title bracket-section-title">Knockout Stage</h2>
           {sampleTournament ? (
             <TournamentBracket
               bracket={sampleTournament.bracket}

@@ -50,8 +50,10 @@ run.sh
 - Single-tournament simulation mode with champion, runner-up, third-place, group tables, and generated bracket
 - Batch simulation mode for tournament probabilities
 - Dashboard showing champion probability, finalist probability, semifinal probability, quarterfinal probability, Round of 32 probability, average goals, and most likely winner
-- Top-10 champion probability chart with scrollable results area
-- Left/right tournament bracket visualization with connecting lines between rounds
+- Top-12 champion probability chart with animated bars and scrollable results area
+- Full-width left/right visual bracket with round columns, connecting lines, winner indicators, and penalty notes
+- Champion banner displayed at the top of the center bracket column (between round headers and the Final card), with flag and team name
+- Finals podium showing champion, runner-up, and third-place with flag images
 - Clickable group cards that open matchday drill-down details after a simulation
 - Light/dark mode toggle stored in `localStorage`
 - Flag images from FlagCDN with safe fallback rendering
@@ -172,11 +174,32 @@ npm run build
 - [FIFA World Rankings](https://www.fifa.com/fifa-world-ranking/men): ranking reference used to shape sample team data
 
 ## Future Improvements
+### User Experience
+- Let users enter their own scorelines for any group or knockout match and manually override the simulated result
+- Let users pick which teams advance through the bracket themselves, creating a fully custom prediction path
+- Add a "My Prediction" mode alongside the simulator where users build their own bracket without running a simulation
+- Save user predictions to `localStorage` so they persist across page refreshes
+- Allow users to share their bracket predictions via a generated link or exported image
+- Show a side-by-side comparison between the user's prediction and the Monte Carlo simulation result
 
-- Add official final group draw data when available
-- Add FIFA's exact third-place matchup allocation matrix
-- Add deeper group tie-breakers such as head-to-head, fair play, and drawing of lots
-- Add team profile pages and fixture filtering
-- Add persistent simulation history
-- Add configurable Elo ratings and host advantage
-- Add deployment configuration after the local MVP is stable
+### Simulation Model
+- Use FIFA's official third-place bracket placement matrix (currently uses best 8 by points/GD/GF)
+- Add full group tie-breaker chain: head-to-head record → fair play points → drawing of lots
+- Support user-adjustable Elo ratings and host advantage multiplier
+- Improve penalty shootout modeling (current implementation uses 50/50 by default)
+
+### UI and Visualisation
+- Add a mobile-friendly / responsive bracket layout
+- Add chart views for semifinals, finals, and Round of 32 probabilities — not just champion
+- Add filtering and sorting controls to the simulation dashboard table
+- Show bracket connectors scaling smoothly to narrower viewports
+
+### Data and History
+- Track and display simulation history across multiple runs
+- Export simulation results as CSV or JSON
+- Compare two different simulation runs side by side
+- Add team profile pages with per-team probability breakdowns across all stages
+
+### Infrastructure
+- Add deployment configuration (Vercel frontend + Railway/Fly.io backend)
+- Cache simulation results server-side to avoid re-running on every page refresh

@@ -207,6 +207,7 @@ def _play_round(matches: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], di
             "away_goals": result["away_goals"],
             "winner": result["winner"],
             "decision": result["decision"],
+            "penalties": result["penalties"],
         }
         completed_matches.append(completed_match)
         winners_by_match_id[match["match_id"]] = completed_match

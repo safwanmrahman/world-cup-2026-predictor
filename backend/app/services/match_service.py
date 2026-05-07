@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 from typing import Any
 
 from ..utils.math_utils import clamp, poisson_pmf, sample_poisson
@@ -52,6 +53,15 @@ def knockout_advance_probabilities(
     home_advance = home_win_probability + draw_probability * edge
     away_advance = away_win_probability + draw_probability * (1 - edge)
     return home_advance, away_advance
+
+
+def sample_penalty_score(winner: str, home_code: str, away_code: str) -> dict[str, int]:
+    winner_score = random.choice([4, 5])
+    loser_score = random.randint(2, winner_score - 1)
+
+    if winner == home_code:
+        return {"home": winner_score, "away": loser_score}
+    return {"home": loser_score, "away": winner_score}
 
 
 def match_probabilities(
@@ -125,6 +135,7 @@ def simulate_match(
     away_goals = sample_poisson(away_xg)
     decision = "full_time"
     penalties_winner = None
+    penalties = None
 
     if stage == "knockout" and home_goals == away_goals:
         decision = "extra_time"
@@ -138,6 +149,11 @@ def simulate_match(
                 home_team["code"]
                 if home_advance_probability >= probabilities["away_advance"]
                 else away_team["code"]
+            )
+            penalties = sample_penalty_score(
+                penalties_winner,
+                home_team["code"],
+                away_team["code"],
             )
 
     if home_goals > away_goals:
@@ -154,6 +170,7 @@ def simulate_match(
         "away_goals": away_goals,
         "winner": winner,
         "decision": decision,
+        "penalties": penalties,
         "probabilities": probabilities,
     }
 
@@ -171,5 +188,7 @@ def predict_match(home_team: dict[str, Any], away_team: dict[str, Any], stage: s
             "home_goals": sampled_result["home_goals"],
             "away_goals": sampled_result["away_goals"],
             "decision": sampled_result["decision"],
+            "winner": sampled_result["winner"],
+            "penalties": sampled_result["penalties"],
         },
     }

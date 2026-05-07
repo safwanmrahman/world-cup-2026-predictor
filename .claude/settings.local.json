@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:www.fifa.com)",
+      "WebFetch(domain:inside.fifa.com)",
+      "WebFetch(domain:football-ranking.com)",
+      "WebFetch(domain:www.msn.com)",
+      "WebFetch(domain:www.fox4news.com)",
+      "WebFetch(domain:www.espn.com)",
+      "WebFetch(domain:www.cbssports.com)",
+      "Bash(curl -s \"https://inside.fifa.com/api/client/v2/ranking/men?locale=en\" -H \"Accept: application/json\")",
+      "Bash(curl -s \"https://inside.fifa.com/ranking/men\" -H \"Accept: application/json, text/plain, */*\" -H \"User-Agent: Mozilla/5.0\")",
+      "Bash(python3 -c \"import sys,json; data=sys.stdin.read\\(\\); print\\(data[:500]\\)\")",
+      "Bash(curl -s \"https://inside.fifa.com/_next/data/qg8iA2IaX0RzPhxFrOHGx/en/fifa-world-ranking/men.json\" -H \"User-Agent: Mozilla/5.0\")",
+      "Bash(curl -s \"https://api.fifa.com/api/v3/rankings/FIFA?locale=en&dateId=ranking_20260401&count=200\" -H \"User-Agent: Mozilla/5.0\" -H \"Origin: https://www.fifa.com\")",
+      "Bash(curl -s \"https://inside.fifa.com/_next/static/chunks/2467-18d6c71ebf54ee00.js\")",
+      "Bash(curl -s \"https://inside.fifa.com/_next/static/chunks/6569-ce968100718dd8fc.js\")"
+    ]
+  }
+}

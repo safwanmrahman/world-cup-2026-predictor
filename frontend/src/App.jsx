@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import {
   GROUP_MATCHDAY_LABELS,
   LEFT_BRACKET_TREE,
@@ -88,6 +88,12 @@ const CODE_TO_ISO = {
 
 const MANUAL_EXPORT_SCRIPT_ID = "html2canvas-script";
 
+function waitForNextPaint() {
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => resolve());
+  });
+}
+
 function formatPercent(value) {
   return `${(value * 100).toFixed(1)}%`;
 }
@@ -156,6 +162,19 @@ function formatMatchScore(match) {
   return baseScore;
 }
 
+function compareProbabilityRows(left, right) {
+  return (
+    right.champion - left.champion
+    || right.average_goals_scored - left.average_goals_scored
+    || right.final - left.final
+    || right.semifinal - left.semifinal
+    || right.quarterfinal - left.quarterfinal
+    || right.round_of_16 - left.round_of_16
+    || right.round_of_32 - left.round_of_32
+    || left.team.name.localeCompare(right.team.name)
+  );
+}
+
 function SunIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -197,19 +216,22 @@ function CloseIcon() {
 function FlagImg({ code, size = "sm", alt }) {
   const iso = CODE_TO_ISO[code];
   const [src, setSrc] = useState(null);
-
-  if (!iso) {
-    return <span className={`flag-shell flag-${size}`} aria-hidden="true" />;
-  }
-
   const dimensions = {
     sm: { assetWidth: 40, width: 24, height: 18 },
     md: { assetWidth: 80, width: 32, height: 24 },
     lg: { assetWidth: 160, width: 64, height: 48 },
     xl: { assetWidth: 320, width: 96, height: 72 },
   }[size];
-  const primarySrc = `https://flagcdn.com/w${dimensions.assetWidth}/${iso}.png`;
-  const fallbackSrc = `https://flagcdn.com/24x18/${iso}.png`;
+  const primarySrc = iso ? `https://flagcdn.com/w${dimensions.assetWidth}/${iso}.png` : null;
+  const fallbackSrc = iso ? `https://flagcdn.com/24x18/${iso}.png` : null;
+
+  useEffect(() => {
+    setSrc(null);
+  }, [primarySrc]);
+
+  if (!iso) {
+    return <span className={`flag-shell flag-${size}`} aria-hidden="true" />;
+  }
 
   if (src === "") {
     return <span className={`flag-shell flag-code-fallback flag-${size}`}>{code}</span>;
@@ -1450,14 +1472,18 @@ function App() {
     setError("");
 
     try {
+      await waitForNextPaint();
       const response = await fetch(`${API_BASE_URL}/simulate-one`, { method: "POST" });
       if (!response.ok) {
         throw new Error("Single tournament simulation failed.");
       }
-      setSampleTournament(await response.json());
+      const data = await response.json();
+      startTransition(() => {
+        setSampleTournament(data);
+        setSimulating(false);
+      });
     } catch (caughtError) {
       setError(caughtError.message);
-    } finally {
       setSimulating(false);
     }
   }
@@ -1467,6 +1493,7 @@ function App() {
     setError("");
 
     try {
+      await waitForNextPaint();
       const response = await fetch(`${API_BASE_URL}/simulate-tournament`, {
         method: "POST",
         headers: {
@@ -1480,11 +1507,13 @@ function App() {
       }
 
       const data = await response.json();
-      setSimulationData(data);
-      setSampleTournament(data.sample_tournament);
+      startTransition(() => {
+        setSimulationData(data);
+        setSampleTournament(data.sample_tournament);
+        setSimulating(false);
+      });
     } catch (caughtError) {
       setError(caughtError.message);
-    } finally {
       setSimulating(false);
     }
   }
@@ -1520,7 +1549,11 @@ function App() {
     () => getComparisonData(manualTournament, sampleTournament),
     [manualTournament, sampleTournament],
   );
-  const probabilityRows = simulationData?.probabilities?.slice(0, 12) ?? [];
+  const sortedProbabilityRows = useMemo(
+    () => (simulationData?.probabilities ? [...simulationData.probabilities].sort(compareProbabilityRows) : []),
+    [simulationData?.probabilities],
+  );
+  const probabilityRows = sortedProbabilityRows.slice(0, 12);
   const homeTeam = getTeam(predictionForm.home_team_code);
   const awayTeam = getTeam(predictionForm.away_team_code);
   const isKnockoutPrediction = prediction?.stage === "knockout";
@@ -1555,10 +1588,10 @@ function App() {
   const statsAverageGoals = simulationData?.summary?.average_goals_per_match ?? sampleAverageGoals;
   const statsSimulationCount = simulationData?.simulations ?? (sampleTournament ? 1 : null);
   const batchMostWinsTeams =
-    simulationData?.probabilities?.length
+    sortedProbabilityRows.length
       ? (() => {
-          const maxChampionRate = Math.max(...simulationData.probabilities.map((entry) => entry.champion));
-          return simulationData.probabilities.filter((entry) => entry.champion === maxChampionRate);
+          const maxChampionRate = Math.max(...sortedProbabilityRows.map((entry) => entry.champion));
+          return sortedProbabilityRows.filter((entry) => entry.champion === maxChampionRate);
         })()
       : [];
   const batchMostWinsCount =
@@ -1566,12 +1599,12 @@ function App() {
       ? Math.round(batchMostWinsTeams[0].champion * simulationData.simulations)
       : null;
   const batchTopScorerGoals =
-    simulationData?.probabilities?.length
-      ? Math.max(...simulationData.probabilities.map((entry) => entry.average_goals_scored))
+    sortedProbabilityRows.length
+      ? Math.max(...sortedProbabilityRows.map((entry) => entry.average_goals_scored))
       : null;
   const batchTopScoringTeams =
-    simulationData?.probabilities?.length
-      ? simulationData.probabilities
+    sortedProbabilityRows.length
+      ? sortedProbabilityRows
           .filter((entry) => entry.average_goals_scored === batchTopScorerGoals)
           .map((entry) => entry.team)
       : [];

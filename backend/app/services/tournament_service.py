@@ -407,7 +407,19 @@ def simulate_tournament(simulations: int) -> dict[str, Any]:
             }
         )
 
-    probabilities.sort(key=lambda entry: entry["champion"], reverse=True)
+    probabilities.sort(
+        key=lambda entry: (
+            entry["champion"],
+            entry["average_goals_scored"],
+            entry["final"],
+            entry["semifinal"],
+            entry["quarterfinal"],
+            entry["round_of_16"],
+            entry["round_of_32"],
+            -entry["team"]["fifa_ranking"],
+        ),
+        reverse=True,
+    )
     most_likely_winner = probabilities[0]
 
     return {

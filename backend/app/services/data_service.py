@@ -115,5 +115,10 @@ def get_group_fixtures() -> dict[str, list[dict[str, Any]]]:
     return grouped
 
 
+@lru_cache
+def get_group_fixtures_flat() -> list[dict[str, Any]]:
+    return _load_json("fixtures.json")["group_stage"]
+
+
 def get_team_by_code(code: str) -> dict[str, Any] | None:
     return get_team_lookup().get(code.upper())

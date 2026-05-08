@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from ..models.schemas import MatchPredictionRequest, TournamentSimulationRequest
-from ..services.data_service import get_group_payload, get_team_by_code, get_teams_payload
+from ..services.data_service import get_group_fixtures_flat, get_group_payload, get_team_by_code, get_teams_payload
 from ..services.match_service import predict_match
 from ..services.tournament_service import simulate_tournament, simulate_tournament_once
 
@@ -16,6 +16,11 @@ def get_teams() -> dict:
 @router.get("/groups")
 def get_groups() -> dict:
     return {"groups": get_group_payload()}
+
+
+@router.get("/fixtures")
+def get_fixtures() -> dict:
+    return {"group_stage": get_group_fixtures_flat()}
 
 
 @router.post("/predict-match")

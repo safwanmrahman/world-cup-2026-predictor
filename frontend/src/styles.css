@@ -262,6 +262,79 @@ table {
   color: var(--text-secondary);
 }
 
+.stat-support {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.stat-support-multi {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.stat-support-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-primary);
+  line-height: 1;
+}
+
+.stat-stack {
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.stat-stack-row {
+  display: grid;
+  gap: 6px;
+}
+
+.stat-stack-label {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.stat-stack-value-pair {
+  display: grid;
+  gap: 6px;
+}
+
+.stat-scroll-area {
+  margin-top: 10px;
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.stat-inline-row {
+  min-width: max-content;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stat-inline-value-pair {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .inline-field input,
 .field-block select {
   background: var(--bg-card);
@@ -1066,6 +1139,11 @@ table {
   border-left-color: var(--accent-primary);
   color: var(--text-primary);
   background: var(--row-alt);
+}
+
+.bracket-team-row.winner .bracket-team-meta span,
+.bracket-team-row.winner strong {
+  font-weight: 900;
 }
 
 .bracket-team-meta {

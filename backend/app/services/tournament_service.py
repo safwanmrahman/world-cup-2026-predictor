@@ -54,6 +54,10 @@ def _standings_sort_key(row: dict[str, Any]) -> tuple[int, int, int, int]:
     )
 
 
+def _create_goal_totals() -> dict[str, int]:
+    return {team["code"]: 0 for team in get_teams_payload()}
+
+
 def _blank_standings(group: dict[str, Any]) -> dict[str, dict[str, Any]]:
     team_lookup = get_team_lookup()
     standings = {}
@@ -107,7 +111,13 @@ def _update_group_table(standings: dict[str, dict[str, Any]], match_result: dict
         away["points"] += 1
 
 
-def _simulate_group_stage() -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, dict[str, Any]], int]:
+def _simulate_group_stage() -> tuple[
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    dict[str, dict[str, Any]],
+    int,
+    dict[str, int],
+]:
     groups_raw = get_groups_raw()
     group_fixtures = get_group_fixtures()
     team_lookup = get_team_lookup()
@@ -115,6 +125,7 @@ def _simulate_group_stage() -> tuple[list[dict[str, Any]], list[dict[str, Any]],
     third_place_rows = []
     placements: dict[str, dict[str, Any]] = {}
     total_group_goals = 0
+    goal_totals = _create_goal_totals()
 
     for group_index, group in enumerate(groups_raw):
         group_letter = GROUP_LETTERS[group_index]
@@ -128,6 +139,8 @@ def _simulate_group_stage() -> tuple[list[dict[str, Any]], list[dict[str, Any]],
                 stage="group",
             )
             total_group_goals += result["home_goals"] + result["away_goals"]
+            goal_totals[result["home_team"]] += result["home_goals"]
+            goal_totals[result["away_team"]] += result["away_goals"]
             played_matches.append(result)
             _update_group_table(standings, result)
 
@@ -148,7 +161,7 @@ def _simulate_group_stage() -> tuple[list[dict[str, Any]], list[dict[str, Any]],
         )
 
     best_third_places = sorted(third_place_rows, key=_standings_sort_key, reverse=True)[:8]
-    return group_results, best_third_places, placements, total_group_goals
+    return group_results, best_third_places, placements, total_group_goals, goal_totals
 
 
 def _resolve_third_place_slots(best_third_places: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
@@ -188,11 +201,12 @@ def _build_round_of_32(
     return matches
 
 
-def _play_round(matches: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[int, dict[str, Any]], int]:
+def _play_round(matches: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[int, dict[str, Any]], int, dict[str, int]]:
     team_lookup = get_team_lookup()
     completed_matches = []
     winners_by_match_id = {}
     goals_in_round = 0
+    goal_totals = _create_goal_totals()
 
     for match in matches:
         result = simulate_match(
@@ -201,6 +215,8 @@ def _play_round(matches: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], di
             stage="knockout",
         )
         goals_in_round += result["home_goals"] + result["away_goals"]
+        goal_totals[result["home_team"]] += result["home_goals"]
+        goal_totals[result["away_team"]] += result["away_goals"]
         completed_match = {
             **match,
             "home_goals": result["home_goals"],
@@ -212,7 +228,15 @@ def _play_round(matches: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], di
         completed_matches.append(completed_match)
         winners_by_match_id[match["match_id"]] = completed_match
 
-    return completed_matches, winners_by_match_id, goals_in_round
+    return completed_matches, winners_by_match_id, goals_in_round, goal_totals
+
+
+def _merge_goal_totals(*totals: dict[str, int]) -> dict[str, int]:
+    merged = _create_goal_totals()
+    for total_set in totals:
+        for code, goals in total_set.items():
+            merged[code] += goals
+    return merged
 
 
 def _build_follow_up_round(
@@ -235,20 +259,45 @@ def _build_follow_up_round(
 
 
 def simulate_tournament_once() -> dict[str, Any]:
-    group_results, best_third_places, placements, group_goals = _simulate_group_stage()
+    group_results, best_third_places, placements, group_goals, group_goal_totals = _simulate_group_stage()
     round_of_32_matches = _build_round_of_32(placements, best_third_places)
 
-    round_of_32_results, r32_winners, r32_goals = _play_round(round_of_32_matches)
+    round_of_32_results, r32_winners, r32_goals, r32_goal_totals = _play_round(round_of_32_matches)
     round_of_16_matches = _build_follow_up_round("Round of 16", r32_winners)
-    round_of_16_results, r16_winners, r16_goals = _play_round(round_of_16_matches)
+    round_of_16_results, r16_winners, r16_goals, r16_goal_totals = _play_round(round_of_16_matches)
     quarterfinal_matches = _build_follow_up_round("Quarterfinals", r16_winners)
-    quarterfinal_results, quarterfinal_winners, quarterfinal_goals = _play_round(quarterfinal_matches)
+    quarterfinal_results, quarterfinal_winners, quarterfinal_goals, quarterfinal_goal_totals = _play_round(quarterfinal_matches)
     semifinal_matches = _build_follow_up_round("Semifinals", quarterfinal_winners)
-    semifinal_results, semifinal_winners, semifinal_goals = _play_round(semifinal_matches)
+    semifinal_results, semifinal_winners, semifinal_goals, semifinal_goal_totals = _play_round(semifinal_matches)
+    semifinal_losers = [
+        match["away_team"] if match["winner"] == match["home_team"] else match["home_team"]
+        for match in semifinal_results
+    ]
+    third_place_results, _, third_place_goals, third_place_goal_totals = _play_round(
+        [
+            {
+                "match_id": 103,
+                "round": "Third Place",
+                "home_team": semifinal_losers[0],
+                "away_team": semifinal_losers[1],
+            }
+        ]
+    )
     final_matches = _build_follow_up_round("Final", semifinal_winners)
-    final_results, _, final_goals = _play_round(final_matches)
+    final_results, _, final_goals, final_goal_totals = _play_round(final_matches)
+
+    team_goal_totals = _merge_goal_totals(
+        group_goal_totals,
+        r32_goal_totals,
+        r16_goal_totals,
+        quarterfinal_goal_totals,
+        semifinal_goal_totals,
+        third_place_goal_totals,
+        final_goal_totals,
+    )
 
     final_match = final_results[0]
+    third_place_match = third_place_results[0]
     champion = final_match["winner"]
     runner_up = (
         final_match["away_team"]
@@ -271,6 +320,7 @@ def simulate_tournament_once() -> dict[str, Any]:
             "round_of_16": round_of_16_results,
             "quarterfinals": quarterfinal_results,
             "semifinals": semifinal_results,
+            "third_place": third_place_results,
             "final": final_results,
         },
         "qualified_for_round_of_32": sorted(qualified_codes),
@@ -280,7 +330,18 @@ def simulate_tournament_once() -> dict[str, Any]:
         "finalists": sorted(match["winner"] for match in semifinal_results),
         "champion": champion,
         "runner_up": runner_up,
-        "total_goals": group_goals + r32_goals + r16_goals + quarterfinal_goals + semifinal_goals + final_goals,
+        "third_place": third_place_match["winner"],
+        "third_place_match": third_place_match,
+        "team_goal_totals": team_goal_totals,
+        "total_goals": (
+            group_goals
+            + r32_goals
+            + r16_goals
+            + quarterfinal_goals
+            + semifinal_goals
+            + third_place_goals
+            + final_goals
+        ),
         "total_matches": 104,
     }
 
@@ -307,9 +368,8 @@ def simulate_tournament(simulations: int) -> dict[str, Any]:
         total_goals += tournament["total_goals"]
         sampled_tournament = tournament if index == simulations - 1 else sampled_tournament
 
-        for group in tournament["group_results"]:
-            for row in group["table"]:
-                counters[row["team_code"]]["goals_scored"] += row["goals_for"]
+        for code, goals in tournament["team_goal_totals"].items():
+            counters[code]["goals_scored"] += goals
 
         qualified_codes = {
             row["team_code"]

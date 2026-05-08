@@ -259,6 +259,49 @@ function StatCard({ label, value, children }) {
   );
 }
 
+function deriveDisplayedTournamentGoalData(tournament, thirdPlaceMatch, teams, getTeam) {
+  if (!tournament) {
+    return null;
+  }
+
+  const totals = Object.fromEntries(teams.map((team) => [team.code, 0]));
+  const allMatches = [
+    ...(tournament.group_results ?? tournament.groupResults ?? []).flatMap((group) => group.matches ?? []),
+    ...(tournament.bracket?.round_of_32 ?? []),
+    ...(tournament.bracket?.round_of_16 ?? []),
+    ...(tournament.bracket?.quarterfinals ?? []),
+    ...(tournament.bracket?.semifinals ?? []),
+    ...(tournament.bracket?.final ?? []),
+    ...(thirdPlaceMatch ? [thirdPlaceMatch] : []),
+  ];
+
+  let totalGoals = 0;
+  for (const match of allMatches) {
+    if (match?.home_team && match?.home_goals != null) {
+      totals[match.home_team] = (totals[match.home_team] ?? 0) + match.home_goals;
+      totalGoals += match.home_goals;
+    }
+    if (match?.away_team && match?.away_goals != null) {
+      totals[match.away_team] = (totals[match.away_team] ?? 0) + match.away_goals;
+      totalGoals += match.away_goals;
+    }
+  }
+
+  const topGoals = Math.max(...Object.values(totals));
+  const topTeams = Object.entries(totals)
+    .filter(([, goals]) => goals === topGoals)
+    .map(([code]) => getTeam(code))
+    .filter(Boolean);
+
+  return {
+    totals,
+    totalGoals,
+    totalMatches: allMatches.length,
+    topGoals,
+    topTeams,
+  };
+}
+
 function StatusBadge({ label, tone = "default" }) {
   return <span className={`status-badge status-badge-${tone}`}>{label}</span>;
 }
@@ -1100,6 +1143,11 @@ function App() {
 
   useEffect(() => {
     async function loadThirdPlaceMatch() {
+      if (sampleTournament?.third_place_match) {
+        setThirdPlaceMatch(sampleTournament.third_place_match);
+        return;
+      }
+
       if (!sampleTournament?.bracket?.semifinals?.length) {
         setThirdPlaceMatch(null);
         return;
@@ -1478,9 +1526,13 @@ function App() {
   const isKnockoutPrediction = prediction?.stage === "knockout";
   const predictionAdvancingTeam = getPredictionAdvancingTeam(prediction);
   const predictionWinnerCode = getPredictionSampleWinnerCode(prediction);
+  const displayedTournamentGoalData = useMemo(
+    () => deriveDisplayedTournamentGoalData(sampleTournament, thirdPlaceMatch, teams, getTeam),
+    [getTeam, sampleTournament, teams, thirdPlaceMatch],
+  );
   const sampleAverageGoals =
-    sampleTournament?.total_goals && sampleTournament?.total_matches
-      ? sampleTournament.total_goals / sampleTournament.total_matches
+    displayedTournamentGoalData?.totalMatches
+      ? displayedTournamentGoalData.totalGoals / displayedTournamentGoalData.totalMatches
       : null;
   const finalMatch = sampleTournament?.bracket?.final?.[0];
   const championCode = finalMatch?.winner;
@@ -1494,16 +1546,49 @@ function App() {
   const runnerUpTeam = runnerUpCode ? getTeam(runnerUpCode) : null;
   const thirdPlaceTeam = thirdPlaceCode ? getTeam(thirdPlaceCode) : null;
   const sampleChampionGoals =
-    championCode && sampleTournament?.group_results
-      ? sampleTournament.group_results
-          .flatMap((group) => group.table)
-          .find((row) => row.team_code === championCode)?.goals_for ?? null
+    championCode && displayedTournamentGoalData?.totals
+      ? displayedTournamentGoalData.totals[championCode] ?? null
       : null;
+  const sampleTopTeamGoals = displayedTournamentGoalData?.topGoals ?? null;
+  const sampleTopScoringTeams = displayedTournamentGoalData?.topTeams ?? null;
   const statsMostLikelyWinner = simulationData?.summary?.most_likely_winner ?? championTeam;
   const statsAverageGoals = simulationData?.summary?.average_goals_per_match ?? sampleAverageGoals;
   const statsSimulationCount = simulationData?.simulations ?? (sampleTournament ? 1 : null);
-  const statsTopTeamGoals =
-    simulationData?.summary?.average_goals_for_most_likely_winner ?? sampleChampionGoals;
+  const batchMostWinsTeams =
+    simulationData?.probabilities?.length
+      ? (() => {
+          const maxChampionRate = Math.max(...simulationData.probabilities.map((entry) => entry.champion));
+          return simulationData.probabilities.filter((entry) => entry.champion === maxChampionRate);
+        })()
+      : [];
+  const batchMostWinsCount =
+    simulationData?.simulations && batchMostWinsTeams.length
+      ? Math.round(batchMostWinsTeams[0].champion * simulationData.simulations)
+      : null;
+  const batchTopScorerGoals =
+    simulationData?.probabilities?.length
+      ? Math.max(...simulationData.probabilities.map((entry) => entry.average_goals_scored))
+      : null;
+  const batchTopScoringTeams =
+    simulationData?.probabilities?.length
+      ? simulationData.probabilities
+          .filter((entry) => entry.average_goals_scored === batchTopScorerGoals)
+          .map((entry) => entry.team)
+      : [];
+  const normalizedSimulationCount = Math.min(10000, Math.max(1, Number(simulationCount) || DEFAULT_SIMULATION_COUNT));
+  const manualChampionTeam = manualTournament?.champion ? getTeam(manualTournament.champion) : null;
+  const manualRunnerUpTeam = manualTournament?.runnerUp ? getTeam(manualTournament.runnerUp) : null;
+  const manualThirdPlaceTeam = manualTournament?.thirdPlace ? getTeam(manualTournament.thirdPlace) : null;
+  const manualDisplayedGoalData = useMemo(
+    () => deriveDisplayedTournamentGoalData(manualTournament, manualTournament?.thirdPlaceMatch, teams, getTeam),
+    [getTeam, manualTournament, teams],
+  );
+  const manualAverageGoals =
+    manualDisplayedGoalData?.totalMatches
+      ? manualDisplayedGoalData.totalGoals / manualDisplayedGoalData.totalMatches
+      : null;
+  const manualTopScorerGoals = manualDisplayedGoalData?.topGoals ?? null;
+  const manualTopScoringTeams = manualDisplayedGoalData?.topTeams ?? null;
 
   return (
     <div className="app-shell">
@@ -1544,7 +1629,7 @@ function App() {
           <button
             type="button"
             className="button button-secondary"
-            onClick={() => runSimulationBatch(simulationCount)}
+            onClick={() => runSimulationBatch(normalizedSimulationCount)}
             disabled={simulating}
           >
             Run Custom Batch
@@ -1559,7 +1644,16 @@ function App() {
               min="1"
               max="10000"
               value={simulationCount}
-              onChange={(event) => setSimulationCount(Number(event.target.value))}
+              onChange={(event) => {
+                const rawValue = event.target.value;
+                if (rawValue === "") {
+                  setSimulationCount("");
+                  return;
+                }
+
+                const normalized = String(Math.min(10000, Math.max(1, Number(rawValue))));
+                setSimulationCount(normalized);
+              }}
             />
           </label>
         </div>
@@ -1580,7 +1674,7 @@ function App() {
           className={`mode-tab ${activeMode === "manual" ? "active" : ""}`}
           onClick={() => setActiveMode("manual")}
         >
-          My Prediction Mode
+          Predictor Mode
         </button>
       </section>
 
@@ -1609,8 +1703,52 @@ function App() {
               }
             />
             <StatCard label="AVG GOALS / MATCH" value={statsAverageGoals != null ? formatDecimal(statsAverageGoals) : "--"} />
-            <StatCard label="SIMULATIONS" value={statsSimulationCount != null ? statsSimulationCount.toLocaleString() : "--"} />
-            <StatCard label="TOP TEAM AVG GOALS" value={statsTopTeamGoals != null ? formatDecimal(statsTopTeamGoals) : "--"} />
+            <StatCard label="SIMULATIONS" value={statsSimulationCount != null ? statsSimulationCount.toLocaleString() : "--"}>
+              {batchMostWinsTeams.length ? (
+                <div className="stat-scroll-area">
+                  <div className="stat-inline-row">
+                    <span className="stat-stack-label">Most Wins</span>
+                    <div className="stat-inline-value-pair">
+                      <strong>{batchMostWinsCount}</strong>
+                      <div className="stat-support stat-support-multi">
+                        {batchMostWinsTeams.map((entry) => (
+                          <span className="stat-support-chip" key={entry.team.code}>
+                            <FlagImg code={entry.team.code} size="sm" alt={`${entry.team.name} flag`} />
+                            {entry.team.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="stat-inline-row">
+                    <span className="stat-stack-label">Batch Top Scorer</span>
+                    <div className="stat-inline-value-pair">
+                      <strong>{formatDecimal(batchTopScorerGoals)}</strong>
+                      <div className="stat-support stat-support-multi">
+                        {batchTopScoringTeams.map((team) => (
+                          <span className="stat-support-chip" key={team.code}>
+                            <FlagImg code={team.code} size="sm" alt={`${team.name} flag`} />
+                            {team.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </StatCard>
+            <StatCard label="TOP SCORER" value={sampleTopTeamGoals != null ? formatDecimal(sampleTopTeamGoals) : "--"}>
+              {sampleTopScoringTeams?.length ? (
+                <div className="stat-support stat-support-multi">
+                  {sampleTopScoringTeams.map((team) => (
+                    <span className="stat-support-chip" key={team.code}>
+                      <FlagImg code={team.code} size="sm" alt={`${team.name} flag`} />
+                      {team.name}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </StatCard>
           </section>
 
           <div className="section-rule" />
@@ -1894,6 +2032,30 @@ function App() {
                 Reset My Prediction
               </button>
             </div>
+          </section>
+
+          {manualTournament && manualChampionTeam && manualRunnerUpTeam && manualThirdPlaceTeam ? (
+            <section className="podium-grid">
+              <PodiumCard label="RUNNER-UP" teamCode={manualRunnerUpTeam.code} teamName={manualRunnerUpTeam.name} tone="silver" />
+              <PodiumCard label="CHAMPION" teamCode={manualChampionTeam.code} teamName={manualChampionTeam.name} tone="gold" size="featured" />
+              <PodiumCard label="3RD PLACE" teamCode={manualThirdPlaceTeam.code} teamName={manualThirdPlaceTeam.name} tone="bronze" />
+            </section>
+          ) : null}
+
+          <section className="stats-grid">
+            <StatCard label="AVG GOALS / MATCH" value={manualAverageGoals != null ? formatDecimal(manualAverageGoals) : "--"} />
+            <StatCard label="TOP SCORER" value={manualTopScorerGoals != null ? formatDecimal(manualTopScorerGoals) : "--"}>
+              {manualTopScoringTeams?.length ? (
+                <div className="stat-support stat-support-multi">
+                  {manualTopScoringTeams.map((team) => (
+                    <span className="stat-support-chip" key={team.code}>
+                      <FlagImg code={team.code} size="sm" alt={`${team.name} flag`} />
+                      {team.name}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </StatCard>
           </section>
 
           <section className="surface-card full-span">

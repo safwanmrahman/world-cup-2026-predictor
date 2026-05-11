@@ -4,6 +4,7 @@ import {
   LEFT_BRACKET_TREE,
   RIGHT_BRACKET_TREE,
   applyGroupOverride,
+  autoFillRemainingPrediction,
   buildManualTournament,
   buildPersistedManualState,
   clearGroupOverride,
@@ -23,7 +24,8 @@ import {
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 const THEME_STORAGE_KEY = "wc26-theme";
-const DEFAULT_SIMULATION_COUNT = 500;
+const DEFAULT_SIMULATION_COUNT = 100;
+const DEFAULT_CUSTOM_SIMULATION_COUNT = 100;
 const TROPHY_PNG_URL = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f3c6.png";
 const CODE_TO_ISO = {
   ALG: "dz",
@@ -502,6 +504,8 @@ function ManualGroupModal({
                 <th>W</th>
                 <th>D</th>
                 <th>L</th>
+                <th>GF</th>
+                <th>GA</th>
                 <th>GD</th>
               </tr>
             </thead>
@@ -520,6 +524,8 @@ function ManualGroupModal({
                     <td>{row.wins}</td>
                     <td>{row.draws}</td>
                     <td>{row.losses}</td>
+                    <td>{row.goals_for}</td>
+                    <td>{row.goals_against}</td>
                     <td>{row.goal_difference > 0 ? `+${row.goal_difference}` : row.goal_difference}</td>
                   </tr>
                 );
@@ -1113,7 +1119,7 @@ function App() {
     away_team_code: "ARG",
     stage: "group",
   });
-  const [simulationCount, setSimulationCount] = useState(DEFAULT_SIMULATION_COUNT);
+  const [simulationCount, setSimulationCount] = useState(DEFAULT_CUSTOM_SIMULATION_COUNT);
   const [simulationData, setSimulationData] = useState(null);
   const [sampleTournament, setSampleTournament] = useState(null);
   const [thirdPlaceMatch, setThirdPlaceMatch] = useState(null);
@@ -1124,6 +1130,7 @@ function App() {
   const [shareStatus, setShareStatus] = useState("");
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [simulating, setSimulating] = useState(false);
+  const [activeSimulationAction, setActiveSimulationAction] = useState("default");
   const [predicting, setPredicting] = useState(false);
   const [error, setError] = useState("");
   const manualBracketRef = useRef(null);
@@ -1360,6 +1367,12 @@ function App() {
     setManualPredictionState((current) => toggleAdvancedOverride(current, groupName));
   }
 
+  function handleAutoFillRemaining() {
+    setManualSaved(false);
+    setManualPredictionState((current) => autoFillRemainingPrediction(current, groups, fixtures, teamLookup));
+    setShareStatus("Remaining picks auto-filled");
+  }
+
   function openManualGroupEditor(groupName) {
     setSelectedManualGroup(groupName);
   }
@@ -1469,6 +1482,7 @@ function App() {
 
   async function runSingleTournament() {
     setSimulating(true);
+    setActiveSimulationAction("single");
     setError("");
 
     try {
@@ -1488,8 +1502,9 @@ function App() {
     }
   }
 
-  async function runSimulationBatch(count) {
+  async function runSimulationBatch(count, action = "custom") {
     setSimulating(true);
+    setActiveSimulationAction(action);
     setError("");
 
     try {
@@ -1608,7 +1623,10 @@ function App() {
           .filter((entry) => entry.average_goals_scored === batchTopScorerGoals)
           .map((entry) => entry.team)
       : [];
-  const normalizedSimulationCount = Math.min(10000, Math.max(1, Number(simulationCount) || DEFAULT_SIMULATION_COUNT));
+  const normalizedSimulationCount = Math.min(
+    10000,
+    Math.max(1, Number(simulationCount) || DEFAULT_CUSTOM_SIMULATION_COUNT),
+  );
   const manualChampionTeam = manualTournament?.champion ? getTeam(manualTournament.champion) : null;
   const manualRunnerUpTeam = manualTournament?.runnerUp ? getTeam(manualTournament.runnerUp) : null;
   const manualThirdPlaceTeam = manualTournament?.thirdPlace ? getTeam(manualTournament.thirdPlace) : null;
@@ -1642,74 +1660,78 @@ function App() {
           a real knockout path, and a cleaner matchday experience.
         </p>
 
-        <div className="hero-actions">
+        <section className="mode-switcher">
           <button
             type="button"
-            className="button button-primary"
-            onClick={() => runSimulationBatch(DEFAULT_SIMULATION_COUNT)}
-            disabled={simulating}
+            className={`mode-tab ${activeMode === "simulator" ? "active" : ""}`}
+            onClick={() => setActiveMode("simulator")}
           >
-            Simulate {DEFAULT_SIMULATION_COUNT} Tournaments
+            Simulator Mode
           </button>
           <button
             type="button"
-            className="button button-secondary"
-            onClick={runSingleTournament}
-            disabled={simulating}
+            className={`mode-tab ${activeMode === "manual" ? "active" : ""}`}
+            onClick={() => setActiveMode("manual")}
           >
-            Simulate One Tournament
+            Predictor Mode
           </button>
-          <button
-            type="button"
-            className="button button-secondary"
-            onClick={() => runSimulationBatch(normalizedSimulationCount)}
-            disabled={simulating}
-          >
-            Run Custom Batch
-          </button>
-        </div>
+        </section>
 
-        <div className="hero-controls">
-          <label className="inline-field">
-            <span>CUSTOM COUNT</span>
-            <input
-              type="number"
-              min="1"
-              max="10000"
-              value={simulationCount}
-              onChange={(event) => {
-                const rawValue = event.target.value;
-                if (rawValue === "") {
-                  setSimulationCount("");
-                  return;
-                }
+        {activeMode === "simulator" ? (
+          <>
+            <div className="hero-actions">
+              <button
+                type="button"
+                className={`button ${activeSimulationAction === "single" ? "button-primary" : "button-secondary"}`}
+                onClick={runSingleTournament}
+                disabled={simulating}
+              >
+                Simulate One Tournament
+              </button>
+              <button
+                type="button"
+                className={`button ${activeSimulationAction === "default" ? "button-primary" : "button-secondary"}`}
+                onClick={() => runSimulationBatch(DEFAULT_SIMULATION_COUNT, "default")}
+                disabled={simulating}
+              >
+                Simulate {DEFAULT_SIMULATION_COUNT} Tournaments
+              </button>
+              <button
+                type="button"
+                className={`button ${activeSimulationAction === "custom" ? "button-primary" : "button-secondary"}`}
+                onClick={() => runSimulationBatch(normalizedSimulationCount, "custom")}
+                disabled={simulating}
+              >
+                Run Custom Batch
+              </button>
+            </div>
 
-                const normalized = String(Math.min(10000, Math.max(1, Number(rawValue))));
-                setSimulationCount(normalized);
-              }}
-            />
-          </label>
-        </div>
+            <div className="hero-controls">
+              <label className="inline-field">
+                <span>CUSTOM COUNT</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="10000"
+                  value={simulationCount}
+                  onChange={(event) => {
+                    const rawValue = event.target.value;
+                    if (rawValue === "") {
+                      setSimulationCount("");
+                      return;
+                    }
+
+                    const normalized = String(Math.min(10000, Math.max(1, Number(rawValue))));
+                    setSimulationCount(normalized);
+                  }}
+                />
+              </label>
+            </div>
+          </>
+        ) : null}
       </header>
 
       {error ? <div className="error-banner">{error}</div> : null}
-
-      <section className="mode-switcher">
-        <button
-          type="button"
-          className={`mode-tab ${activeMode === "simulator" ? "active" : ""}`}
-          onClick={() => setActiveMode("simulator")}
-        >
-          Simulator Mode
-        </button>
-        <button
-          type="button"
-          className={`mode-tab ${activeMode === "manual" ? "active" : ""}`}
-          onClick={() => setActiveMode("manual")}
-        >
-          Predictor Mode
-        </button>
-      </section>
 
       {activeMode === "simulator" ? (
         <>
@@ -2060,6 +2082,9 @@ function App() {
               </button>
               <button type="button" className="button button-secondary" onClick={handleCopyShareLink}>
                 Copy Share Link
+              </button>
+              <button type="button" className="button button-secondary" onClick={handleAutoFillRemaining}>
+                Auto-fill Remaining
               </button>
               <button type="button" className="button button-primary" onClick={handleResetManualPrediction}>
                 Reset My Prediction

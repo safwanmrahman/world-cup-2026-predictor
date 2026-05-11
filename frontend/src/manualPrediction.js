@@ -143,6 +143,26 @@ function weightedPick(options) {
   return options[options.length - 1]?.value ?? null;
 }
 
+function pickAutoOutcome(teamA, teamB, stage) {
+  const eloA = teamElo(teamA);
+  const eloB = teamElo(teamB);
+  const expectedA = 1 / (1 + 10 ** ((eloB - eloA) / 400));
+
+  if (stage === "group") {
+    const drawWeight = Math.max(18, 30 - Math.round(Math.abs(eloA - eloB) / 25));
+    return weightedPick([
+      { value: "teamA", weight: expectedA * 70 },
+      { value: "draw", weight: drawWeight },
+      { value: "teamB", weight: (1 - expectedA) * 70 },
+    ]);
+  }
+
+  return weightedPick([
+    { value: "teamA", weight: expectedA * 100 },
+    { value: "teamB", weight: (1 - expectedA) * 100 },
+  ]);
+}
+
 function deriveSelectedOutcome(homeGoals, awayGoals, stage) {
   if (homeGoals == null || awayGoals == null) {
     return null;
@@ -302,6 +322,27 @@ function createDefaultKnockoutState() {
     source: null,
     resultType: "REGULAR",
   };
+}
+
+function isUntouchedGroupEntry(entry) {
+  return (
+    entry.homeGoals === ""
+    && entry.awayGoals === ""
+    && entry.selectedOutcome == null
+    && entry.source == null
+  );
+}
+
+function isUntouchedKnockoutEntry(entry) {
+  return (
+    entry.homeGoals === ""
+    && entry.awayGoals === ""
+    && entry.penaltiesHome === ""
+    && entry.penaltiesAway === ""
+    && entry.selectedOutcome == null
+    && entry.advancedTeamId == null
+    && entry.source == null
+  );
 }
 
 export function createInitialPredictionState(groups, fixtures) {
@@ -889,6 +930,70 @@ export function quickPickKnockoutMatch(state, match, teamsByCode, selectedOutcom
         resultType: generated.resultType,
       },
     },
+    updatedAt: Date.now(),
+  };
+}
+
+export function autoFillRemainingPrediction(state, groups, fixtures, teamsByCode) {
+  let nextState = state;
+
+  fixtures.forEach((fixture) => {
+    const entry = {
+      ...createDefaultGroupScoreState(),
+      ...(nextState.groupScores[fixture.match_id] ?? {}),
+    };
+
+    if (!isUntouchedGroupEntry(entry)) {
+      return;
+    }
+
+    const selectedOutcome = pickAutoOutcome(
+      teamsByCode[fixture.home_team],
+      teamsByCode[fixture.away_team],
+      "group",
+    );
+    nextState = quickPickGroupMatch(nextState, fixture, teamsByCode, selectedOutcome);
+  });
+
+  let filledMatch = true;
+  while (filledMatch) {
+    filledMatch = false;
+    const derived = buildManualTournament(nextState, groups, fixtures, teamsByCode);
+    const knockoutMatches = [
+      ...derived.bracket.round_of_32,
+      ...derived.bracket.round_of_16,
+      ...derived.bracket.quarterfinals,
+      ...derived.bracket.semifinals,
+      ...derived.bracket.final,
+      derived.thirdPlaceMatch,
+    ].filter(Boolean);
+
+    knockoutMatches.forEach((match) => {
+      if (!match.home_team || !match.away_team) {
+        return;
+      }
+
+      const entry = {
+        ...createDefaultKnockoutState(),
+        ...(nextState.knockoutMatches[match.match_id] ?? {}),
+      };
+
+      if (!isUntouchedKnockoutEntry(entry)) {
+        return;
+      }
+
+      const selectedOutcome = pickAutoOutcome(
+        teamsByCode[match.home_team],
+        teamsByCode[match.away_team],
+        "knockout",
+      );
+      nextState = quickPickKnockoutMatch(nextState, match, teamsByCode, selectedOutcome);
+      filledMatch = true;
+    });
+  }
+
+  return {
+    ...nextState,
     updatedAt: Date.now(),
   };
 }

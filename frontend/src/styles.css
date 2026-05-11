@@ -161,6 +161,7 @@ table {
   grid-template-areas:
     "title title"
     "subtitle subtitle"
+    "mode mode"
     "actions controls";
   column-gap: 18px;
   row-gap: 16px;
@@ -1343,7 +1344,9 @@ table {
 }
 
 .mode-switcher {
+  grid-area: mode;
   display: inline-flex;
+  justify-self: start;
   gap: 10px;
   padding: 6px;
   border: 1px solid var(--border-primary);
@@ -1820,6 +1823,8 @@ table {
     grid-template-areas:
       "title"
       "subtitle"
+      "mode"
+      "actions"
       "controls";
   }
 

@@ -1,9 +1,16 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..models.schemas import MatchPredictionRequest, TournamentSimulationRequest
 from ..services.data_service import get_group_fixtures_flat, get_group_payload, get_team_by_code, get_teams_payload
 from ..services.match_service import predict_match
 from ..services.tournament_service import simulate_tournament, simulate_tournament_once
+from ..utils.security import (
+    PUBLIC_SIMULATION_MAX,
+    PREDICT_MATCH_RULE,
+    SIMULATE_BATCH_RULE,
+    SIMULATE_ONE_RULE,
+    throttle,
+)
 
 router = APIRouter()
 
@@ -24,7 +31,10 @@ def get_fixtures() -> dict:
 
 
 @router.post("/predict-match")
-def predict_match_route(payload: MatchPredictionRequest) -> dict:
+def predict_match_route(
+    payload: MatchPredictionRequest,
+    _rate_limit: None = Depends(throttle("predict-match", PREDICT_MATCH_RULE)),
+) -> dict:
     if payload.home_team_code.upper() == payload.away_team_code.upper():
         raise HTTPException(status_code=400, detail="Teams must be different.")
 
@@ -39,10 +49,20 @@ def predict_match_route(payload: MatchPredictionRequest) -> dict:
 
 
 @router.post("/simulate-one")
-def simulate_one_route() -> dict:
+def simulate_one_route(
+    _rate_limit: None = Depends(throttle("simulate-one", SIMULATE_ONE_RULE)),
+) -> dict:
     return simulate_tournament_once()
 
 
 @router.post("/simulate-tournament")
-def simulate_tournament_route(payload: TournamentSimulationRequest) -> dict:
+def simulate_tournament_route(
+    payload: TournamentSimulationRequest,
+    _rate_limit: None = Depends(throttle("simulate-tournament", SIMULATE_BATCH_RULE)),
+) -> dict:
+    if payload.simulations > PUBLIC_SIMULATION_MAX:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Simulation count exceeds the public limit of {PUBLIC_SIMULATION_MAX}.",
+        )
     return simulate_tournament(payload.simulations)

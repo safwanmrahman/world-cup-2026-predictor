@@ -1,4 +1,7 @@
-export const API_BASE_URL = "http://127.0.0.1:8000";
+const DEFAULT_LOCAL_API_BASE_URL = "http://127.0.0.1:8000";
+const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+
+export const API_BASE_URL = configuredApiBaseUrl || DEFAULT_LOCAL_API_BASE_URL;
 export const THEME_STORAGE_KEY = "wc26-theme";
 export const DEFAULT_SIMULATION_COUNT = 100;
 export const DEFAULT_CUSTOM_SIMULATION_COUNT = 100;
@@ -8,7 +11,6 @@ export const TOURNAMENT_TABS = [
   { id: "recap", label: "Recap" },
 ];
 export const TROPHY_PNG_URL = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f3c6.png";
-export const MANUAL_EXPORT_SCRIPT_ID = "html2canvas-script";
 
 export const CODE_TO_ISO = {
   ALG: "dz",

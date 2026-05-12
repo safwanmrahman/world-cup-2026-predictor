@@ -3,3 +3,8 @@ frontend/node_modules/
 frontend/dist/
 __pycache__/
 .DS_Store
+.env
+.env.*
+!**/.env.example
+backend/.env
+frontend/.env

@@ -10,4 +10,4 @@ class MatchPredictionRequest(BaseModel):
 
 
 class TournamentSimulationRequest(BaseModel):
-    simulations: int = Field(default=1000, ge=1, le=10000)
+    simulations: int = Field(default=1000, ge=1, le=5000)

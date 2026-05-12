@@ -11,6 +11,15 @@ import {
   waitForNextPaint,
 } from "../utils/formattingUtils";
 
+async function readErrorMessage(response, fallbackMessage) {
+  try {
+    const body = await response.json();
+    return body.detail || fallbackMessage;
+  } catch {
+    return fallbackMessage;
+  }
+}
+
 export function useTournamentState() {
   const [activeMode, setActiveMode] = useState("simulator");
   const [groups, setGroups] = useState([]);
@@ -56,7 +65,7 @@ export function useTournamentState() {
         ]);
 
         if (!groupsResponse.ok || !teamsResponse.ok || !fixturesResponse.ok) {
-          throw new Error("Could not load the API. Make sure the backend is running.");
+          throw new Error("Could not load the API. Check VITE_API_BASE_URL and make sure the backend is running.");
         }
 
         const groupsData = await groupsResponse.json();
@@ -108,7 +117,7 @@ export function useTournamentState() {
         });
 
         if (!response.ok) {
-          throw new Error("Could not generate third-place match.");
+          throw new Error(await readErrorMessage(response, "Could not generate third-place match."));
         }
 
         const data = await response.json();
@@ -170,8 +179,7 @@ export function useTournamentState() {
       });
 
       if (!response.ok) {
-        const body = await response.json();
-        throw new Error(body.detail || "Prediction failed.");
+        throw new Error(await readErrorMessage(response, "Prediction failed."));
       }
 
       setPrediction(await response.json());
@@ -191,7 +199,7 @@ export function useTournamentState() {
       await waitForNextPaint();
       const response = await fetch(`${API_BASE_URL}/simulate-one`, { method: "POST" });
       if (!response.ok) {
-        throw new Error("Single tournament simulation failed.");
+        throw new Error(await readErrorMessage(response, "Single tournament simulation failed."));
       }
       const data = await response.json();
       startTransition(() => {
@@ -218,7 +226,7 @@ export function useTournamentState() {
       });
 
       if (!response.ok) {
-        throw new Error("Tournament simulation failed.");
+        throw new Error(await readErrorMessage(response, "Tournament simulation failed."));
       }
 
       const data = await response.json();

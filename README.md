@@ -11,13 +11,26 @@ backend/
     routes/
     services/
     utils/
+  .env.example
   requirements.txt
 frontend/
-  src/
-    App.jsx
-    main.jsx
-    styles.css
+  .env.example
   package.json
+  src/
+    main.jsx
+    App.jsx
+    components/
+      dashboard/
+      groups/
+      hero/
+      knockout/
+      predictor/
+      recap/
+      shared/
+    data/
+    hooks/
+    styles/
+    utils/
 data/
   teams.json
   groups.json
@@ -36,8 +49,9 @@ run.sh
 - Model: Elo-adjusted expected goals with Poisson score simulation
 - Simulation: Monte Carlo tournament runs
 - Manual prediction: client-side editable bracket + localStorage persistence
-- Styling: custom CSS with Barlow typography, responsive layouts, and light/dark themes
-- Flags: FlagCDN PNG assets using ISO country codes
+- Exports: bundled `html2canvas` image export
+- Styling: custom CSS with responsive layouts, sports-broadcast inspired presentation, and light/dark themes
+- Flags: shared TeamFlag rendering backed by FlagCDN assets with graceful fallbacks
 
 ## Current Features
 
@@ -55,7 +69,7 @@ run.sh
 - Single-tournament simulation mode with champion, runner-up, third-place, group tables, and generated bracket
 - Batch simulation mode for tournament probabilities
 - Dashboard showing champion probability, finalist probability, semifinal probability, quarterfinal probability, Round of 32 probability, average goals, and most likely winner
-- Top-12 champion probability chart with animated bars and scrollable results area
+- Champion probability dashboard with animated bars, theme-aware contrast, and premium empty/loading states
 - Full-width left/right visual bracket with round columns, connecting lines, winner indicators, and penalty notes
 - Bracket route highlighting on hover/click to trace a team's visible knockout path
 - Champion banner displayed at the top of the center bracket column (between round headers and the Final card), with flag and team name
@@ -63,14 +77,16 @@ run.sh
 - Clickable group cards that open matchday drill-down details after a simulation
 - Tournament tabs for `Group Stage`, `Knockout Stage`, and `Recap` in both simulator and predictor workflows
 - Editorial-style recap pages with podium cards, awards, stats, upset watch, champion route, and tournament story sections
-- Knockout match details modals for simulator and predictor mode, including rankings, advancement odds, upset indicators, and path-so-far context
+- Knockout match details modals for simulator and predictor mode, including rankings, advancement odds, upset indicators, path-so-far context, and in-modal predictor editing
 - Manual prediction builder with:
+  - summary-first group cards that open into a dedicated group editor modal
   - click-to-pick group-stage winners and draws with optional score editing
   - realistic auto-generated scorelines based on team strength
-  - collapsible group cards with completion status, expand/collapse controls, and optional advanced override tools
+  - completion tracking and optional advanced override tools
   - auto-updating group tables
   - manual standings override controls behind an advanced toggle
-  - manual third-place advancer selection
+  - automatic best eight third-place advancement logic aligned with simulator mode
+  - compact knockout cards that open a detailed editing modal
   - click-to-pick knockout winners with optional score and penalty editing
   - auto-advancing teams through the full bracket
 - Manual prediction persistence in `localStorage`
@@ -78,9 +94,10 @@ run.sh
 - Exportable bracket image using `html2canvas`
 - Auto-fill remaining picks for untouched predictor matches
 - Split predictor resets for groups, knockouts, and full bracket reset with confirmation modals
-- Side-by-side comparison between the manual bracket and the latest Monte Carlo result
 - Light/dark mode toggle stored in `localStorage`
-- Flag images from FlagCDN with safe fallback rendering
+- Flag rendering standardized through a reusable component for sharper, more consistent display
+- Environment-based frontend API configuration with `VITE_API_BASE_URL`
+- Environment-based backend CORS, API docs, and request throttling controls
 
 ## Backend API
 
@@ -140,10 +157,10 @@ The app also tracks average goals per match and average team goals across simula
 
 1. Quick-pick any group-stage match by clicking Team A, Team B, or Draw.
 2. Let the app auto-generate a realistic scoreline, or manually edit the score afterward.
-3. Watch the group tables recalculate automatically inside collapsible group cards.
+3. Watch the group tables recalculate automatically as the predictor state updates.
 4. Open advanced override controls only when you want to manually reorder standings.
-5. Choose the eight third-place teams that advance.
-6. Click through the knockout bracket to advance teams, with optional score and penalty edits.
+5. Let the app resolve the best eight third-place teams using the same criteria as simulator mode.
+6. Click through the knockout bracket to open match details, then pick winners and edit scores or penalties inside the modal.
 7. Save that state automatically in the browser.
 8. Share the bracket through a copied link or export it as a PNG.
 
@@ -162,6 +179,13 @@ chmod +x setup.sh run.sh
 ```
 
 This installs backend and frontend dependencies, then starts both servers.
+
+To override local defaults, copy the example env files first:
+
+```bash
+cp frontend/.env.example frontend/.env
+cp backend/.env.example backend/.env
+```
 
 Open:
 
@@ -208,10 +232,72 @@ cd frontend
 npm run build
 ```
 
+## Environment Variables
+
+### Frontend
+
+Create `frontend/.env` from `frontend/.env.example` when you need to point the app at a different API:
+
+```bash
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+For production, set `VITE_API_BASE_URL` to your deployed HTTPS backend URL.
+
+### Backend
+
+Create `backend/.env` from `backend/.env.example` or configure these variables through your deployment platform:
+
+```bash
+APP_ENV=development
+ENABLE_API_DOCS=true
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+RATE_LIMIT_WINDOW_SECONDS=60
+RATE_LIMIT_PREDICT_MATCH=120
+RATE_LIMIT_SIMULATE_ONE=30
+RATE_LIMIT_SIMULATE_BATCH=12
+PUBLIC_SIMULATION_MAX=2000
+```
+
+Notes:
+
+- `ALLOWED_ORIGINS` is comma-separated.
+- `ENABLE_API_DOCS=false` is recommended in production unless you intentionally want public docs.
+- `PUBLIC_SIMULATION_MAX` sets the public cap for batch simulations.
+
+## Production Notes
+
+- `run.sh` is a development convenience script only. It uses `uvicorn --reload` and should not be used as a production entrypoint.
+- In production, run FastAPI with a proper process manager and an HTTPS-aware reverse proxy.
+- Configure `ALLOWED_ORIGINS` explicitly for your deployed frontend origin.
+- The API now applies basic in-memory throttling to:
+  - `POST /predict-match`
+  - `POST /simulate-one`
+  - `POST /simulate-tournament`
+- Oversized batch simulation requests are rejected by the backend if they exceed `PUBLIC_SIMULATION_MAX`.
+- Before release, run dependency checks such as:
+  - `cd frontend && npm audit --omit=dev`
+  - `pip-audit` in the backend environment
+
+## Frontend Architecture
+
+The frontend is organized by feature so the app can keep growing without centralizing all logic in one file:
+
+- `components/hero`: hero masthead, mode switcher, action buttons, and theme toggle
+- `components/dashboard`: stat cards, head-to-head model, champion probability dashboard, and probability bars
+- `components/groups`: simulator group tables, predictor group cards, standings, third-place view, and group editor/results modals
+- `components/knockout`: bracket layout, match cards, champion banner, and knockout details modal
+- `components/predictor`: predictor toolbar, tournament tabs, and simulator/predictor view composition
+- `components/recap`: podium and tournament recap presentation
+- `components/shared`: reusable UI primitives such as buttons, badges, modal shell, flags, icons, and loading states
+- `hooks`: theme persistence, tournament orchestration, and predictor state management
+- `utils`: formatting helpers, knockout helpers, simulation display shaping, and export helpers
+- `styles`: split global, theme, and animation entrypoints
+
 ## Credits
 
-- [FlagCDN](https://flagcdn.com): country flag PNG assets
-- [Google Fonts](https://fonts.google.com): Barlow typeface
+- [FlagCDN](https://flagcdn.com): country flag assets
+- [Google Fonts](https://fonts.google.com): Inter typeface
 - [FIFA World Rankings](https://www.fifa.com/fifa-world-ranking/men): ranking reference used to shape sample team data
 
 ## Future Improvements

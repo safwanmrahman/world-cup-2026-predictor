@@ -74,6 +74,10 @@ export const KNOCKOUT_ROUND_LINKS = {
 const GROUP_LETTERS = "ABCDEFGHIJKL";
 const RESULT_TYPES = new Set(["REGULAR", "PENS"]);
 const MATCH_SOURCES = new Set(["manual-score", "quick-pick-generated-score"]);
+const GROUP_OUTCOMES = new Set(["teamA", "teamB", "draw"]);
+const KNOCKOUT_OUTCOMES = new Set(["teamA", "teamB"]);
+const MAX_SHARE_HASH_LENGTH = 50000;
+const MAX_PERSISTED_PAYLOAD_LENGTH = 50000;
 
 function standingsSortKey(row) {
   return [row.points, row.goal_difference, row.goals_for, row.elo_rating];
@@ -121,12 +125,21 @@ function parseScore(value) {
   return Math.floor(numeric);
 }
 
+function clampParsedScore(value) {
+  const parsed = parseScore(value);
+  return parsed == null ? null : Math.min(20, parsed);
+}
+
 function normalizeResultType(value) {
   return RESULT_TYPES.has(value) ? value : "REGULAR";
 }
 
 function normalizeSource(value) {
   return MATCH_SOURCES.has(value) ? value : null;
+}
+
+function normalizeSelectedOutcome(value, allowedOutcomes) {
+  return allowedOutcomes.has(value) ? value : null;
 }
 
 function weightedPick(options) {
@@ -321,6 +334,160 @@ function createDefaultKnockoutState() {
     advancedTeamId: null,
     source: null,
     resultType: "REGULAR",
+  };
+}
+
+function sanitizeStringScore(value) {
+  if (value === "" || value == null) {
+    return "";
+  }
+
+  const parsed = clampParsedScore(value);
+  return parsed == null ? "" : String(parsed);
+}
+
+function sanitizeGroupScoreEntry(value) {
+  const fallback = createDefaultGroupScoreState();
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return fallback;
+  }
+
+  return {
+    homeGoals: sanitizeStringScore(value.homeGoals),
+    awayGoals: sanitizeStringScore(value.awayGoals),
+    selectedOutcome: normalizeSelectedOutcome(value.selectedOutcome, GROUP_OUTCOMES),
+    source: normalizeSource(value.source),
+    resultType: "REGULAR",
+  };
+}
+
+function sanitizeKnockoutEntry(value, validTeamCodes) {
+  const fallback = createDefaultKnockoutState();
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return fallback;
+  }
+
+  const advancedTeamId = validTeamCodes.has(value.advancedTeamId) ? value.advancedTeamId : null;
+
+  return {
+    homeGoals: sanitizeStringScore(value.homeGoals),
+    awayGoals: sanitizeStringScore(value.awayGoals),
+    penaltiesHome: sanitizeStringScore(value.penaltiesHome),
+    penaltiesAway: sanitizeStringScore(value.penaltiesAway),
+    selectedOutcome: normalizeSelectedOutcome(value.selectedOutcome, KNOCKOUT_OUTCOMES),
+    advancedTeamId,
+    source: normalizeSource(value.source),
+    resultType: normalizeResultType(value.resultType),
+  };
+}
+
+function sanitizeCodeArray(value, validCodes, maxItems) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const unique = [];
+  const seen = new Set();
+
+  value.forEach((code) => {
+    if (
+      typeof code === "string"
+      && validCodes.has(code)
+      && !seen.has(code)
+      && unique.length < maxItems
+    ) {
+      seen.add(code);
+      unique.push(code);
+    }
+  });
+
+  return unique;
+}
+
+function sanitizeNameArray(value, validNames, maxItems) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const unique = [];
+  const seen = new Set();
+
+  value.forEach((name) => {
+    if (
+      typeof name === "string"
+      && validNames.has(name)
+      && !seen.has(name)
+      && unique.length < maxItems
+    ) {
+      seen.add(name);
+      unique.push(name);
+    }
+  });
+
+  return unique;
+}
+
+function sanitizeGroupOverrides(value, validGroupNames, validTeamCodes) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  const nextOverrides = {};
+
+  Object.entries(value).forEach(([groupName, order]) => {
+    if (!validGroupNames.has(groupName) || !Array.isArray(order)) {
+      return;
+    }
+
+    const sanitizedOrder = sanitizeCodeArray(order, validTeamCodes, 4);
+    if (sanitizedOrder.length) {
+      nextOverrides[groupName] = sanitizedOrder;
+    }
+  });
+
+  return nextOverrides;
+}
+
+function sanitizeImportedManualState(source, initial, groups) {
+  if (!source || typeof source !== "object" || Array.isArray(source)) {
+    return null;
+  }
+
+  const validGroupNames = new Set(groups.map((group) => group.name));
+  const validTeamCodes = new Set(groups.flatMap((group) => group.teams.map((team) => team.code)));
+  const validGroupScoreIds = new Set(Object.keys(initial.groupScores));
+  const validKnockoutIds = new Set([
+    ...ROUND_OF_32_TEMPLATE.map((match) => String(match.match_id)),
+    ...Object.values(KNOCKOUT_ROUND_LINKS)
+      .flat()
+      .map((match) => String(match.match_id)),
+    "3P",
+  ]);
+
+  const groupScores = Object.fromEntries(
+    Object.keys(initial.groupScores).map((matchId) => [
+      matchId,
+      sanitizeGroupScoreEntry(validGroupScoreIds.has(matchId) ? source.groupScores?.[matchId] : null),
+    ]),
+  );
+
+  const knockoutMatches = Object.fromEntries(
+    Object.entries(source.knockoutMatches ?? {})
+      .filter(([matchId]) => validKnockoutIds.has(String(matchId)))
+      .slice(0, validKnockoutIds.size)
+      .map(([matchId, value]) => [matchId, sanitizeKnockoutEntry(value, validTeamCodes)]),
+  );
+
+  return {
+    ...initial,
+    mode: "manual",
+    groupScores,
+    groupOverrides: sanitizeGroupOverrides(source.groupOverrides, validGroupNames, validTeamCodes),
+    selectedThirdPlaceTeams: sanitizeCodeArray(source.selectedThirdPlaceTeams, validTeamCodes, 8),
+    knockoutMatches,
+    expandedGroups: sanitizeNameArray(source.expandedGroups, validGroupNames, groups.length) || initial.expandedGroups,
+    advancedOverrideGroups: sanitizeNameArray(source.advancedOverrideGroups, validGroupNames, groups.length),
+    updatedAt: Date.now(),
   };
 }
 
@@ -1096,6 +1263,9 @@ export function decodePredictionHash(hash) {
 
   try {
     const encoded = hash.slice(MANUAL_SHARE_PREFIX.length);
+    if (!encoded || encoded.length > MAX_SHARE_HASH_LENGTH) {
+      return null;
+    }
     return safeParse(decodeURIComponent(atob(encoded)));
   } catch {
     return null;
@@ -1109,39 +1279,15 @@ export function encodePredictionHash(state) {
 export function loadManualPredictionState(groups, fixtures) {
   const initial = createInitialPredictionState(groups, fixtures);
   const shared = decodePredictionHash(window.location.hash);
-  const stored = safeParse(localStorage.getItem(MANUAL_PREDICTION_STORAGE_KEY));
+  const storedRaw = localStorage.getItem(MANUAL_PREDICTION_STORAGE_KEY);
+  const stored = storedRaw && storedRaw.length <= MAX_PERSISTED_PAYLOAD_LENGTH ? safeParse(storedRaw) : null;
   const source = shared ?? stored;
 
   if (!source) {
     return initial;
   }
 
-  return {
-    ...initial,
-    ...source,
-    groupScores: Object.fromEntries(
-      Object.keys(initial.groupScores).map((matchId) => [
-        matchId,
-        {
-          ...createDefaultGroupScoreState(),
-          ...(source.groupScores?.[matchId] ?? {}),
-        },
-      ]),
-    ),
-    groupOverrides: source.groupOverrides ?? {},
-    selectedThirdPlaceTeams: source.selectedThirdPlaceTeams ?? [],
-    knockoutMatches: Object.fromEntries(
-      Object.entries(source.knockoutMatches ?? {}).map(([matchId, value]) => [
-        matchId,
-        {
-          ...createDefaultKnockoutState(),
-          ...value,
-        },
-      ]),
-    ),
-    expandedGroups: Array.isArray(source.expandedGroups) ? source.expandedGroups : initial.expandedGroups,
-    advancedOverrideGroups: Array.isArray(source.advancedOverrideGroups) ? source.advancedOverrideGroups : [],
-  };
+  return sanitizeImportedManualState(source, initial, groups) ?? initial;
 }
 
 function clearSharedPredictionLocation() {

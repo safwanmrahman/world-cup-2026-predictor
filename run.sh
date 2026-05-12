@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Development convenience launcher only.
+# Do not use this script as a production entrypoint.
+
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -40,7 +43,7 @@ npm run dev -- --host 127.0.0.1 &
 FRONTEND_PID=$!
 
 echo
-echo "World Cup 2026 Simulator is starting."
+echo "World Cup 2026 Simulator is starting in development mode."
 echo "Frontend: http://127.0.0.1:5173"
 echo "Backend docs: http://127.0.0.1:8000/docs"
 echo "Press Ctrl+C to stop both servers."

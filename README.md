@@ -294,12 +294,6 @@ The frontend is organized by feature so the app can keep growing without central
 - `utils`: formatting helpers, knockout helpers, simulation display shaping, and export helpers
 - `styles`: split global, theme, and animation entrypoints
 
-## Credits
-
-- [FlagCDN](https://flagcdn.com): country flag assets
-- [Google Fonts](https://fonts.google.com): Inter typeface
-- [FIFA World Rankings](https://www.fifa.com/fifa-world-ranking/men): ranking reference used to shape sample team data
-
 ## Future Improvements
 
 ### Simulation Model
@@ -322,3 +316,9 @@ The frontend is organized by feature so the app can keep growing without central
 ### Infrastructure
 - Add deployment configuration (Vercel frontend + Railway/Fly.io backend)
 - Cache simulation results server-side to avoid re-running on every page refresh
+
+## Credits
+
+- [FlagCDN](https://flagcdn.com): country flag assets
+- [Google Fonts](https://fonts.google.com): Inter typeface
+- [FIFA World Rankings](https://www.fifa.com/fifa-world-ranking/men): ranking reference used to shape sample team data

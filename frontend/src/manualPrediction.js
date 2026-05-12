@@ -674,9 +674,12 @@ export function buildManualTournament(state, groups, fixtures, teamsByCode) {
     teamsByCode,
     state.groupOverrides,
   );
-  const placements = groupPlacements(groupResults);
-  const selectedThirdPlaces = normalizeSelectedThirdPlaces(groupResults, state.selectedThirdPlaceTeams);
-  const thirdPlaceSlots = resolveThirdPlaceSlots(selectedThirdPlaces);
+  const allGroupsComplete = groupResults.every((group) => group.isComplete);
+  const placements = allGroupsComplete ? groupPlacements(groupResults) : {};
+  const selectedThirdPlaces = allGroupsComplete
+    ? normalizeSelectedThirdPlaces(groupResults, state.selectedThirdPlaceTeams)
+    : [];
+  const thirdPlaceSlots = allGroupsComplete ? resolveThirdPlaceSlots(selectedThirdPlaces) : {};
   const roundOf32 = ROUND_OF_32_TEMPLATE.map((template) =>
     hydrateMatchState(
       createBaseMatch(template, placements, thirdPlaceSlots),
@@ -710,10 +713,12 @@ export function buildManualTournament(state, groups, fixtures, teamsByCode) {
     groupResults.map((group) => [
       group.name,
       {
-        first: group.table[0]?.team_code ?? null,
-        second: group.table[1]?.team_code ?? null,
-        third: group.table[2]?.team_code ?? null,
-        thirdPlaceAdvanced: selectedThirdPlaces.some((team) => team.team_code === group.table[2]?.team_code),
+        first: group.isComplete ? group.table[0]?.team_code ?? null : null,
+        second: group.isComplete ? group.table[1]?.team_code ?? null : null,
+        third: group.isComplete ? group.table[2]?.team_code ?? null : null,
+        thirdPlaceAdvanced:
+          allGroupsComplete
+          && selectedThirdPlaces.some((team) => team.team_code === group.table[2]?.team_code),
       },
     ]),
   );
@@ -726,8 +731,12 @@ export function buildManualTournament(state, groups, fixtures, teamsByCode) {
     placements,
     groupAdvancers,
     qualifiedForRoundOf32: [
-      ...groupResults.flatMap((group) => group.table.slice(0, 2).map((row) => row.team_code)),
-      ...selectedThirdPlaces.map((team) => team.team_code),
+      ...(allGroupsComplete
+        ? [
+            ...groupResults.flatMap((group) => group.table.slice(0, 2).map((row) => row.team_code)),
+            ...selectedThirdPlaces.map((team) => team.team_code),
+          ]
+        : []),
     ],
     bracket: {
       round_of_32: roundOf32,
@@ -1135,55 +1144,43 @@ export function loadManualPredictionState(groups, fixtures) {
   };
 }
 
-export function resetManualPrediction(groups, fixtures) {
-  localStorage.removeItem(MANUAL_PREDICTION_STORAGE_KEY);
+function clearSharedPredictionLocation() {
   window.history.replaceState(null, "", window.location.pathname + window.location.search);
-  return createInitialPredictionState(groups, fixtures);
 }
 
-export function getComparisonData(manualTournament, simulationTournament) {
-  if (!manualTournament || !simulationTournament) {
-    return null;
-  }
-
-  const simulatedFirsts = Object.fromEntries(
-    simulationTournament.group_results.map((group) => [group.name, group.table[0]?.team_code ?? null]),
-  );
-  const manualFirsts = Object.fromEntries(
-    manualTournament.groupResults.map((group) => [group.name, group.table[0]?.team_code ?? null]),
-  );
-  const knockoutDifferences = [];
-  const simulationMatches = [
-    ...simulationTournament.bracket.round_of_32,
-    ...simulationTournament.bracket.round_of_16,
-    ...simulationTournament.bracket.quarterfinals,
-    ...simulationTournament.bracket.semifinals,
-    ...simulationTournament.bracket.final,
-  ];
-  const simulationById = Object.fromEntries(simulationMatches.map((match) => [match.match_id, match]));
-  const manualMatches = [
-    ...manualTournament.bracket.round_of_32,
-    ...manualTournament.bracket.round_of_16,
-    ...manualTournament.bracket.quarterfinals,
-    ...manualTournament.bracket.semifinals,
-    ...manualTournament.bracket.final,
-  ];
-
-  manualMatches.forEach((match) => {
-    const simulated = simulationById[match.match_id];
-    if (simulated?.winner && match.winner && simulated.winner !== match.winner) {
-      knockoutDifferences.push({
-        match_id: match.match_id,
-        round: match.round,
-        manualWinner: match.winner,
-        simulatedWinner: simulated.winner,
-      });
-    }
-  });
-
+export function resetManualGroups(state) {
+  clearSharedPredictionLocation();
   return {
-    manualFirsts,
-    simulatedFirsts,
-    knockoutDifferences,
+    ...state,
+    groupScores: Object.fromEntries(
+      Object.keys(state.groupScores).map((matchId) => [matchId, createDefaultGroupScoreState()]),
+    ),
+    groupOverrides: {},
+    selectedThirdPlaceTeams: [],
+    knockoutMatches: {},
+    groupTables: {},
+    groupAdvancers: {},
+    champion: null,
+    runnerUp: null,
+    thirdPlace: null,
+    updatedAt: Date.now(),
   };
+}
+
+export function resetManualKnockouts(state) {
+  clearSharedPredictionLocation();
+  return {
+    ...state,
+    knockoutMatches: {},
+    champion: null,
+    runnerUp: null,
+    thirdPlace: null,
+    updatedAt: Date.now(),
+  };
+}
+
+export function resetManualPrediction(groups, fixtures) {
+  clearSharedPredictionLocation();
+  localStorage.removeItem(MANUAL_PREDICTION_STORAGE_KEY);
+  return createInitialPredictionState(groups, fixtures);
 }

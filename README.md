@@ -44,7 +44,7 @@ run.sh
 - Full 48-team tournament data with 12 groups of 4 teams
 - Two main modes:
   - `Simulator Mode`: Monte Carlo tournament runs and probability views
-  - `My Prediction Mode`: manual group and knockout prediction builder
+  - `Predictor Mode`: manual group and knockout prediction builder
 - Group-stage simulation with matchday results and live standings
 - Group table sorting by points, goal difference, and goals scored
 - Top 2 teams from each group advance automatically
@@ -57,9 +57,13 @@ run.sh
 - Dashboard showing champion probability, finalist probability, semifinal probability, quarterfinal probability, Round of 32 probability, average goals, and most likely winner
 - Top-12 champion probability chart with animated bars and scrollable results area
 - Full-width left/right visual bracket with round columns, connecting lines, winner indicators, and penalty notes
+- Bracket route highlighting on hover/click to trace a team's visible knockout path
 - Champion banner displayed at the top of the center bracket column (between round headers and the Final card), with flag and team name
 - Finals podium showing champion, runner-up, and third-place with flag images
 - Clickable group cards that open matchday drill-down details after a simulation
+- Tournament tabs for `Group Stage`, `Knockout Stage`, and `Recap` in both simulator and predictor workflows
+- Editorial-style recap pages with podium cards, awards, stats, upset watch, champion route, and tournament story sections
+- Knockout match details modals for simulator and predictor mode, including rankings, advancement odds, upset indicators, and path-so-far context
 - Manual prediction builder with:
   - click-to-pick group-stage winners and draws with optional score editing
   - realistic auto-generated scorelines based on team strength
@@ -72,6 +76,8 @@ run.sh
 - Manual prediction persistence in `localStorage`
 - Shareable manual prediction links encoded in the URL hash
 - Exportable bracket image using `html2canvas`
+- Auto-fill remaining picks for untouched predictor matches
+- Split predictor resets for groups, knockouts, and full bracket reset with confirmation modals
 - Side-by-side comparison between the manual bracket and the latest Monte Carlo result
 - Light/dark mode toggle stored in `localStorage`
 - Flag images from FlagCDN with safe fallback rendering
@@ -130,7 +136,7 @@ The app also tracks average goals per match and average team goals across simula
 
 ## Manual Prediction Mode
 
-`My Prediction Mode` lets users build an entire World Cup path by hand:
+`Predictor Mode` lets users build an entire World Cup path by hand:
 
 1. Quick-pick any group-stage match by clicking Team A, Team B, or Draw.
 2. Let the app auto-generate a realistic scoreline, or manually edit the score afterward.
@@ -217,10 +223,9 @@ npm run build
 - Improve penalty shootout modeling (current implementation uses a lightweight deterministic edge)
 
 ### UI and Visualisation
-- Add a mobile-friendly / responsive bracket layout
 - Add chart views for semifinals, finals, and Round of 32 probabilities — not just champion
 - Add filtering and sorting controls to the simulation dashboard table
-- Show bracket connectors scaling smoothly to narrower viewports
+- Add richer empty states and contextual onboarding for first-time simulator and predictor users
 
 ### Data and History
 - Track and display simulation history across multiple runs

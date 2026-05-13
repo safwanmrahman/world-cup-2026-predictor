@@ -5,6 +5,7 @@ import ThirdPlaceAdvancers from "../groups/ThirdPlaceAdvancers";
 import KnockoutBracket from "../knockout/KnockoutBracket";
 import { ManualKnockoutMatchCard } from "../knockout/KnockoutMatchCard";
 import TournamentRecap from "../recap/TournamentRecap";
+import PodiumSection from "../recap/PodiumSection";
 
 export default function PredictorModeView(props) {
   const {
@@ -24,10 +25,14 @@ export default function PredictorModeView(props) {
     teams,
     manualBracketRef,
   } = props;
+  const championTeam = manualTournament?.champion ? getTeam(manualTournament.champion) : null;
+  const runnerUpTeam = manualTournament?.runnerUp ? getTeam(manualTournament.runnerUp) : null;
+  const thirdPlaceTeam = manualTournament?.thirdPlace ? getTeam(manualTournament.thirdPlace) : null;
 
   return (
     <>
       <PredictorToolbar {...toolbarProps} />
+      <PodiumSection championTeam={championTeam} runnerUpTeam={runnerUpTeam} thirdPlaceTeam={thirdPlaceTeam} />
       <TournamentTabs activeTab={activeManualTab} onChange={setActiveManualTab} />
 
       {activeManualTab === "groups" ? (

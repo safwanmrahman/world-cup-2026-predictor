@@ -36,7 +36,12 @@ export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleT
       return;
     }
 
-    const loaded = loadManualPredictionState(groups, fixtures);
+    const navigationEntry = window.performance?.getEntriesByType?.("navigation")?.[0];
+    const isReloadNavigation = navigationEntry?.type === "reload"
+      || window.performance?.navigation?.type === window.performance?.navigation?.TYPE_RELOAD;
+    const loaded = isReloadNavigation
+      ? resetManualPrediction(groups, fixtures)
+      : loadManualPredictionState(groups, fixtures);
     setManualPredictionState(loaded);
   }, [groups, fixtures]);
 

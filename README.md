@@ -1,4 +1,4 @@
-# FIFA World Cup 2026 Predictor
+# World Cup 2026 Simulator
 
 A lightweight full-stack web app for predicting and simulating the 2026 FIFA World Cup. The app combines a FastAPI simulation backend, local JSON tournament data, an Elo-informed Poisson score model, a full manual bracket builder, and a polished React dashboard with group tables, match prediction, tournament probabilities, sharing tools, and a visual knockout bracket.
 
@@ -16,6 +16,18 @@ backend/
 frontend/
   .env.example
   package.json
+  public/
+    favicon.ico
+    favicon-32x32.png
+    favicon-16x16.png
+    apple-touch-icon.png
+    android-chrome-192x192.png
+    android-chrome-512x512.png
+    site.webmanifest
+    branding/
+      app-icon-source.png
+  scripts/
+    generate-favicons.py
   src/
     main.jsx
     App.jsx
@@ -44,14 +56,15 @@ run.sh
 ## Tech Stack
 
 - Backend: Python, FastAPI, Uvicorn
-- Frontend: React with Vite
+- Frontend: React 19 with Vite 7
 - Data: local JSON files
 - Model: Elo-adjusted expected goals with Poisson score simulation
 - Simulation: Monte Carlo tournament runs
-- Manual prediction: client-side editable bracket + localStorage persistence
+- Manual prediction: client-side editable bracket with live podium results, shareable URLs, and refresh-safe initialization
 - Exports: bundled `html2canvas` image export
 - Styling: custom CSS with responsive layouts, sports-broadcast inspired presentation, and light/dark themes
 - Flags: shared TeamFlag rendering backed by FlagCDN assets with graceful fallbacks
+- App icons: generated favicon, Apple touch icon, Android icons, and web manifest metadata
 
 ## Current Features
 
@@ -74,6 +87,7 @@ run.sh
 - Bracket route highlighting on hover/click to trace a team's visible knockout path
 - Champion banner displayed at the top of the center bracket column (between round headers and the Final card), with flag and team name
 - Finals podium showing champion, runner-up, and third-place with flag images
+- Predictor mode podium at the top showing champion, runner-up, and third place live from the current manual bracket
 - Clickable group cards that open matchday drill-down details after a simulation
 - Tournament tabs for `Group Stage`, `Knockout Stage`, and `Recap` in both simulator and predictor workflows
 - Editorial-style recap pages with podium cards, awards, stats, upset watch, champion route, and tournament story sections
@@ -89,13 +103,14 @@ run.sh
   - compact knockout cards that open a detailed editing modal
   - click-to-pick knockout winners with optional score and penalty editing
   - auto-advancing teams through the full bracket
-- Manual prediction persistence in `localStorage`
+- Manual prediction persistence in `localStorage` for in-session usage, with a fresh Predictor state restored on full page refresh
 - Shareable manual prediction links encoded in the URL hash
 - Exportable bracket image using `html2canvas`
 - Auto-fill remaining picks for untouched predictor matches
 - Split predictor resets for groups, knockouts, and full bracket reset with confirmation modals
 - Light/dark mode toggle stored in `localStorage`
 - Flag rendering standardized through a reusable component for sharper, more consistent display
+- Production-ready favicon/app icon setup with browser tab icons, Apple touch icon, Android icons, and a web manifest
 - Environment-based frontend API configuration with `VITE_API_BASE_URL`
 - Environment-based backend CORS, API docs, and request throttling controls
 
@@ -161,7 +176,7 @@ The app also tracks average goals per match and average team goals across simula
 4. Open advanced override controls only when you want to manually reorder standings.
 5. Let the app resolve the best eight third-place teams using the same criteria as simulator mode.
 6. Click through the knockout bracket to open match details, then pick winners and edit scores or penalties inside the modal.
-7. Save that state automatically in the browser.
+7. Keep working in the current session with automatic local persistence while still starting fresh on a full page refresh.
 8. Share the bracket through a copied link or export it as a PNG.
 
 The manual state is stored as a structured object that includes scores, quick-pick outcomes, overrides, group expansion state, third-place selections, knockout results, and derived outcomes such as champion, runner-up, and third-place finisher.
@@ -232,6 +247,42 @@ cd frontend
 npm run build
 ```
 
+## App Icon / Favicon
+
+The frontend now includes a full favicon setup in `frontend/public/`:
+
+- `favicon.ico`
+- `favicon-32x32.png`
+- `favicon-16x16.png`
+- `apple-touch-icon.png`
+- `android-chrome-192x192.png`
+- `android-chrome-512x512.png`
+- `site.webmanifest`
+
+Source artwork lives at:
+
+```text
+frontend/public/branding/app-icon-source.png
+```
+
+To regenerate the full favicon set from that one source image:
+
+```bash
+cd frontend
+npm run generate:favicons
+```
+
+Recommended source file specs:
+
+- Format: `PNG`
+- Shape: square
+- Minimum size: `1024x1024`
+- Ideal size: `2048x2048`
+- Background: transparent or fully composed
+- Safe area: keep the main mark inside the center `80%` so it stays readable at `16x16`
+
+If you replace the source artwork, rerun `npm run generate:favicons` and then hard-refresh the browser if an old favicon is cached.
+
 ## Environment Variables
 
 ### Frontend
@@ -291,6 +342,8 @@ The frontend is organized by feature so the app can keep growing without central
 - `components/recap`: podium and tournament recap presentation
 - `components/shared`: reusable UI primitives such as buttons, badges, modal shell, flags, icons, and loading states
 - `hooks`: theme persistence, tournament orchestration, and predictor state management
+- `public`: static app-branding assets including favicon files, Apple touch icon, Android icons, and the web manifest
+- `scripts`: utility scripts such as the favicon generator
 - `utils`: formatting helpers, knockout helpers, simulation display shaping, and export helpers
 - `styles`: split global, theme, and animation entrypoints
 

@@ -1,5 +1,6 @@
 import PredictorToolbar from "./PredictorToolbar";
 import TournamentTabs from "./TournamentTabs";
+import TournamentSummaryCards from "../dashboard/TournamentSummaryCards";
 import GroupStage from "../groups/GroupStage";
 import ThirdPlaceAdvancers from "../groups/ThirdPlaceAdvancers";
 import KnockoutBracket from "../knockout/KnockoutBracket";
@@ -24,6 +25,11 @@ export default function PredictorModeView(props) {
     handleOpenKnockoutDetails,
     handleKnockoutMatchChange,
     handleKnockoutQuickPick,
+    manualAverageGoals,
+    manualTopScorerGoals,
+    manualTopScoringTeams,
+    manualBestDefenseGoalsAgainst,
+    manualBestDefenseTeams,
     teams,
     manualBracketRef,
   } = props;
@@ -35,6 +41,17 @@ export default function PredictorModeView(props) {
     <>
       <PredictorToolbar {...toolbarProps} />
       <PodiumSection championTeam={championTeam} runnerUpTeam={runnerUpTeam} thirdPlaceTeam={thirdPlaceTeam} />
+      <TournamentSummaryCards
+        mostLikelyWinner={championTeam}
+        averageGoals={manualAverageGoals}
+        bestAttackValue={manualTopScorerGoals}
+        bestAttackTeams={manualTopScoringTeams}
+        bestAttackMode="total"
+        bestDefenseValue={manualBestDefenseGoalsAgainst}
+        bestDefenseTeams={manualBestDefenseTeams}
+        bestDefenseMode="total"
+        emptyLabel="Awaiting picks"
+      />
       <TournamentTabs activeTab={activeManualTab} onChange={setActiveManualTab} />
 
       {activeManualTab === "groups" ? (

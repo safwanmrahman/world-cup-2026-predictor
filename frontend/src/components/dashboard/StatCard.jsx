@@ -1,4 +1,4 @@
-export default function StatCard({ label, value, icon = null, children }) {
+export default function StatCard({ label, value, icon = null, detail = "", children }) {
   return (
     <div className="stat-card">
       <div className="stat-card-head">
@@ -6,6 +6,7 @@ export default function StatCard({ label, value, icon = null, children }) {
         <div className="stat-label">{label}</div>
       </div>
       <div className="stat-value">{value}</div>
+      {detail ? <div className="stat-detail">{detail}</div> : null}
       {children}
     </div>
   );

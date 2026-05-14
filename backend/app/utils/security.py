@@ -64,7 +64,7 @@ SIMULATE_ONE_RULE = RateLimitRule(
 )
 
 SIMULATE_BATCH_RULE = RateLimitRule(
-    limit=env_int("RATE_LIMIT_SIMULATE_BATCH", 12, 1),
+    limit=env_int("RATE_LIMIT_SIMULATE_BATCH", 20, 1),
     window_seconds=env_int("RATE_LIMIT_WINDOW_SECONDS", 60, 1),
     error_message="Too many batch tournament simulations. Please wait and try again.",
 )

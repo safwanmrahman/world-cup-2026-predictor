@@ -132,7 +132,7 @@ export default function KnockoutBracket({
             </div>
           ) : null}
           <div className="bracket-finals-matches">
-            <div>
+            <div className="bracket-finals-section bracket-finals-section-final">
               <div className="bracket-column-title">FINAL</div>
               <div className="bracket-finals-stack">
                 {bracket.final.map((match) => (
@@ -142,7 +142,7 @@ export default function KnockoutBracket({
                 ))}
               </div>
             </div>
-            <div>
+            <div className="bracket-finals-section bracket-finals-section-third">
               <div className="bracket-column-title third-place-title">THIRD PLACE</div>
               <div className="bracket-finals-stack">
                 {thirdPlaceMatch ? (

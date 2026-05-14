@@ -1,15 +1,12 @@
 import ChampionProbabilityDashboard from "../dashboard/ChampionProbabilityDashboard";
 import HeadToHeadPredictor from "../dashboard/HeadToHeadPredictor";
-import StatCard from "../dashboard/StatCard";
+import TournamentSummaryCards from "../dashboard/TournamentSummaryCards";
 import GroupStage from "../groups/GroupStage";
 import ThirdPlaceAdvancers from "../groups/ThirdPlaceAdvancers";
 import KnockoutBracket from "../knockout/KnockoutBracket";
 import TournamentRecap from "../recap/TournamentRecap";
 import PodiumSection from "../recap/PodiumSection";
-import TeamFlag from "../shared/TeamFlag";
 import TournamentTabs from "./TournamentTabs";
-import { BallIcon, BootIcon, ChartIcon, TrophyIcon } from "../shared/Icons";
-import { formatDecimal } from "../../utils/formattingUtils";
 
 export default function SimulatorModeView(props) {
   const {
@@ -24,8 +21,13 @@ export default function SimulatorModeView(props) {
     batchMostWinsCount,
     batchTopScorerGoals,
     batchTopScoringTeams,
-    sampleTopTeamGoals,
-    sampleTopScoringTeams,
+    hasBatchSimulationResults,
+    summaryBestAttackValue,
+    summaryBestAttackTeams,
+    summaryBestAttackMode,
+    summaryBestDefenseValue,
+    summaryBestDefenseTeams,
+    summaryBestDefenseMode,
     predictionProps,
     simulationData,
     probabilityRows,
@@ -50,64 +52,30 @@ export default function SimulatorModeView(props) {
     <>
       <PodiumSection championTeam={championTeam} runnerUpTeam={runnerUpTeam} thirdPlaceTeam={thirdPlaceTeam} />
 
-      <section className="stats-grid">
-        <StatCard
-          label="MOST LIKELY WINNER"
-          icon={<TrophyIcon />}
-          value={statsMostLikelyWinner ? <span className="winner-inline"><TeamFlag code={statsMostLikelyWinner.code} size="sm" alt={`${statsMostLikelyWinner.name} flag`} />{statsMostLikelyWinner.name}</span> : "Awaiting simulation"}
-        />
-        <StatCard label="AVG GOALS / MATCH" icon={<BallIcon />} value={statsAverageGoals != null ? formatDecimal(statsAverageGoals) : "--"} />
-        <StatCard label="SIMULATIONS" icon={<ChartIcon />} value={statsSimulationCount != null ? statsSimulationCount.toLocaleString() : "--"}>
-          {batchMostWinsTeams.length ? (
-            <div className="stat-scroll-area">
-              <div className="stat-inline-row">
-                <span className="stat-stack-label">Most Wins</span>
-                <div className="stat-inline-value-pair">
-                  <strong>{batchMostWinsCount}</strong>
-                  <div className="stat-support stat-support-multi">
-                    {batchMostWinsTeams.map((entry) => (
-                      <span className="stat-support-chip" key={entry.team.code}>
-                        <TeamFlag code={entry.team.code} size="sm" alt={`${entry.team.name} flag`} />
-                        {entry.team.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="stat-inline-row">
-                <span className="stat-stack-label">Batch Top Scorer</span>
-                <div className="stat-inline-value-pair">
-                  <strong>{formatDecimal(batchTopScorerGoals)}</strong>
-                  <div className="stat-support stat-support-multi">
-                    {batchTopScoringTeams.map((team) => (
-                      <span className="stat-support-chip" key={team.code}>
-                        <TeamFlag code={team.code} size="sm" alt={`${team.name} flag`} />
-                        {team.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </StatCard>
-        <StatCard label="TOP SCORER" icon={<BootIcon />} value={sampleTopTeamGoals != null ? formatDecimal(sampleTopTeamGoals) : "--"}>
-          {sampleTopScoringTeams?.length ? (
-            <div className="stat-support stat-support-multi">
-              {sampleTopScoringTeams.map((team) => (
-                <span className="stat-support-chip" key={team.code}>
-                  <TeamFlag code={team.code} size="sm" alt={`${team.name} flag`} />
-                  {team.name}
-                </span>
-              ))}
-            </div>
-          ) : null}
-        </StatCard>
-      </section>
+      <TournamentSummaryCards
+        mostLikelyWinner={statsMostLikelyWinner}
+        averageGoals={statsAverageGoals}
+        bestAttackValue={summaryBestAttackValue}
+        bestAttackTeams={summaryBestAttackTeams}
+        bestAttackMode={summaryBestAttackMode}
+        bestDefenseValue={summaryBestDefenseValue}
+        bestDefenseTeams={summaryBestDefenseTeams}
+        bestDefenseMode={summaryBestDefenseMode}
+        emptyLabel="Awaiting simulation"
+      />
 
       <main className="main-grid simulator-core-grid">
         <HeadToHeadPredictor {...predictionProps} />
-        <ChampionProbabilityDashboard simulationData={simulationData} probabilityRows={probabilityRows} />
+        <ChampionProbabilityDashboard
+          simulationData={simulationData}
+          probabilityRows={probabilityRows}
+          simulationCount={statsSimulationCount}
+          hasBatchSimulationResults={hasBatchSimulationResults}
+          batchMostWinsTeams={batchMostWinsTeams}
+          batchMostWinsCount={batchMostWinsCount}
+          batchTopScoringTeams={batchTopScoringTeams}
+          batchTopScorerGoals={batchTopScorerGoals}
+        />
       </main>
 
       <TournamentTabs activeTab={activeSimulatorTab} onChange={setActiveSimulatorTab} />

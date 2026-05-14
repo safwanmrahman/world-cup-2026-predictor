@@ -4,7 +4,7 @@ import {
   compareProbabilityRows,
   getTournamentKnockoutMatches,
 } from "../utils/knockoutUtils";
-import { deriveDisplayedTournamentGoalData } from "../utils/simulationUtils";
+import { deriveTournamentRecapData } from "../utils/simulationUtils";
 import {
   getPredictionAdvancingTeam,
   getPredictionSampleWinnerCode,
@@ -202,6 +202,7 @@ export function useTournamentState() {
     setSimulating(true);
     setActiveSimulationAction("single");
     setError("");
+    setSimulationData(null);
 
     try {
       await waitForNextPaint();
@@ -312,14 +313,13 @@ export function useTournamentState() {
     () => (simulationData?.probabilities ? [...simulationData.probabilities].sort(compareProbabilityRows) : []),
     [simulationData?.probabilities],
   );
+  const hasBatchSimulationResults = (simulationData?.simulations ?? 0) > 1;
   const probabilityRows = sortedProbabilityRows.slice(0, 12);
-  const displayedTournamentGoalData = useMemo(
-    () => deriveDisplayedTournamentGoalData(sampleTournament, thirdPlaceMatch, teams, getTeam),
-    [sampleTournament, thirdPlaceMatch, teams],
+  const tournamentRecapData = useMemo(
+    () => deriveTournamentRecapData(sampleTournament, thirdPlaceMatch, teams, getTeam),
+    [sampleTournament, thirdPlaceMatch, teams, getTeam],
   );
-  const sampleAverageGoals = displayedTournamentGoalData?.totalMatches
-    ? displayedTournamentGoalData.totalGoals / displayedTournamentGoalData.totalMatches
-    : null;
+  const sampleAverageGoals = tournamentRecapData?.averageGoals ?? null;
   const finalMatch = sampleTournament?.bracket?.final?.[0];
   const championCode = finalMatch?.winner;
   const runnerUpCode = finalMatch
@@ -329,19 +329,24 @@ export function useTournamentState() {
   const championTeam = championCode ? getTeam(championCode) : null;
   const runnerUpTeam = runnerUpCode ? getTeam(runnerUpCode) : null;
   const thirdPlaceTeam = thirdPlaceCode ? getTeam(thirdPlaceCode) : null;
-  const sampleTopTeamGoals = displayedTournamentGoalData?.topGoals ?? null;
-  const sampleTopScoringTeams = displayedTournamentGoalData?.topTeams ?? null;
-  const statsMostLikelyWinner = simulationData?.summary?.most_likely_winner ?? championTeam;
-  const statsAverageGoals = simulationData?.summary?.average_goals_per_match ?? sampleAverageGoals;
-  const statsSimulationCount = simulationData?.simulations ?? (sampleTournament ? 1 : null);
+  const hasSampleTournamentStats = (tournamentRecapData?.completedMatches ?? 0) > 0;
+  const sampleTopTeamGoals = hasSampleTournamentStats ? (tournamentRecapData?.topGoals ?? null) : null;
+  const sampleTopScoringTeams = hasSampleTournamentStats && (tournamentRecapData?.topGoals ?? 0) > 0
+    ? (tournamentRecapData?.topScorers ?? [])
+    : [];
+  const sampleBestDefenseGoalsAgainst = hasSampleTournamentStats ? (tournamentRecapData?.minConceded ?? null) : null;
+  const sampleBestDefenseTeams = hasSampleTournamentStats ? (tournamentRecapData?.bestDefenseTeams ?? []) : [];
+  const statsMostLikelyWinner = hasBatchSimulationResults ? simulationData?.summary?.most_likely_winner ?? null : championTeam;
+  const statsAverageGoals = hasBatchSimulationResults ? simulationData?.summary?.average_goals_per_match ?? null : sampleAverageGoals;
+  const statsSimulationCount = simulationData?.simulations ?? null;
   const batchMostWinsTeams = sortedProbabilityRows.length
     ? (() => {
         const maxChampionRate = Math.max(...sortedProbabilityRows.map((entry) => entry.champion));
         return sortedProbabilityRows.filter((entry) => entry.champion === maxChampionRate);
       })()
     : [];
-  const batchMostWinsCount = simulationData?.simulations && batchMostWinsTeams.length
-    ? Math.round(batchMostWinsTeams[0].champion * simulationData.simulations)
+  const batchMostWinsCount = hasBatchSimulationResults && batchMostWinsTeams.length
+    ? batchMostWinsTeams[0].champion_wins
     : null;
   const batchTopScorerGoals = sortedProbabilityRows.length
     ? Math.max(...sortedProbabilityRows.map((entry) => entry.average_goals_scored))
@@ -349,6 +354,18 @@ export function useTournamentState() {
   const batchTopScoringTeams = sortedProbabilityRows.length
     ? sortedProbabilityRows.filter((entry) => entry.average_goals_scored === batchTopScorerGoals).map((entry) => entry.team)
     : [];
+  const batchBestDefenseGoalsAgainst = sortedProbabilityRows.length
+    ? Math.min(...sortedProbabilityRows.map((entry) => entry.average_goals_against))
+    : null;
+  const batchBestDefenseTeams = sortedProbabilityRows.length
+    ? sortedProbabilityRows.filter((entry) => entry.average_goals_against === batchBestDefenseGoalsAgainst).map((entry) => entry.team)
+    : [];
+  const summaryBestAttackValue = hasBatchSimulationResults ? batchTopScorerGoals : sampleTopTeamGoals;
+  const summaryBestAttackTeams = hasBatchSimulationResults ? batchTopScoringTeams : sampleTopScoringTeams;
+  const summaryBestAttackMode = hasBatchSimulationResults ? "average" : "total";
+  const summaryBestDefenseValue = hasBatchSimulationResults ? batchBestDefenseGoalsAgainst : sampleBestDefenseGoalsAgainst;
+  const summaryBestDefenseTeams = hasBatchSimulationResults ? batchBestDefenseTeams : sampleBestDefenseTeams;
+  const summaryBestDefenseMode = hasBatchSimulationResults ? "average" : "total";
   const normalizedSimulationCount = Math.min(10000, Math.max(1, Number(simulationCount) || DEFAULT_CUSTOM_SIMULATION_COUNT));
   const homeTeam = getTeam(predictionForm.home_team_code);
   const awayTeam = getTeam(predictionForm.away_team_code);
@@ -403,10 +420,17 @@ export function useTournamentState() {
     statsMostLikelyWinner,
     statsAverageGoals,
     statsSimulationCount,
+    hasBatchSimulationResults,
     batchMostWinsTeams,
     batchMostWinsCount,
     batchTopScorerGoals,
     batchTopScoringTeams,
+    summaryBestAttackValue,
+    summaryBestAttackTeams,
+    summaryBestAttackMode,
+    summaryBestDefenseValue,
+    summaryBestDefenseTeams,
+    summaryBestDefenseMode,
     normalizedSimulationCount,
     championTeam,
     runnerUpTeam,

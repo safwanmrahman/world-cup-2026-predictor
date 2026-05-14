@@ -1,7 +1,7 @@
 import TeamFlag from "../shared/TeamFlag";
 import { formatDecimal, formatPercent } from "../../utils/formattingUtils";
 
-export default function ProbabilityBar({ entry, index }) {
+export default function ProbabilityBar({ entry, index, showBatchTrophyCount }) {
   return (
     <div
       className={`dashboard-bar-row ${index === 0 ? "top-team" : ""}`}
@@ -9,10 +9,13 @@ export default function ProbabilityBar({ entry, index }) {
     >
       <div className="dashboard-team">
         <TeamFlag code={entry.team.code} size="sm" alt={`${entry.team.name} flag`} />
-        <div>
+        <div className="dashboard-team-copy">
           <div className="dashboard-team-name">{entry.team.name}</div>
-          <div className="dashboard-team-meta">
-            {entry.team.code} · Avg GF {formatDecimal(entry.average_goals_scored)}
+          <div className="dashboard-team-meta-row">
+            <div className="dashboard-team-meta">
+              {entry.team.code} · Avg GF {formatDecimal(entry.average_goals_scored)}
+            </div>
+            {showBatchTrophyCount ? <span className="dashboard-trophy-count">🏆 {entry.champion_wins}</span> : null}
           </div>
         </div>
       </div>

@@ -357,6 +357,7 @@ def simulate_tournament(simulations: int) -> dict[str, Any]:
             "final": 0,
             "champion": 0,
             "goals_scored": 0,
+            "goals_against": 0,
         }
         for team in teams
     }
@@ -370,6 +371,19 @@ def simulate_tournament(simulations: int) -> dict[str, Any]:
 
         for code, goals in tournament["team_goal_totals"].items():
             counters[code]["goals_scored"] += goals
+
+        tournament_matches = [
+            *[match for group in tournament["group_results"] for match in group["matches"]],
+            *(tournament["bracket"]["round_of_32"] or []),
+            *(tournament["bracket"]["round_of_16"] or []),
+            *(tournament["bracket"]["quarterfinals"] or []),
+            *(tournament["bracket"]["semifinals"] or []),
+            *(tournament["bracket"]["final"] or []),
+            *([tournament["third_place_match"]] if tournament.get("third_place_match") else []),
+        ]
+        for match in tournament_matches:
+            counters[match["home_team"]]["goals_against"] += match["away_goals"]
+            counters[match["away_team"]]["goals_against"] += match["home_goals"]
 
         qualified_codes = {
             row["team_code"]
@@ -403,7 +417,9 @@ def simulate_tournament(simulations: int) -> dict[str, Any]:
                 "semifinal": count["semifinal"] / simulations,
                 "final": count["final"] / simulations,
                 "champion": count["champion"] / simulations,
+                "champion_wins": count["champion"],
                 "average_goals_scored": count["goals_scored"] / simulations,
+                "average_goals_against": count["goals_against"] / simulations,
             }
         )
 

@@ -19,7 +19,7 @@ import {
   updateKnockoutMatch,
   updateSelectedThirdPlaces,
 } from "../manualPrediction";
-import { deriveDisplayedTournamentGoalData } from "../utils/simulationUtils";
+import { deriveTournamentRecapData } from "../utils/simulationUtils";
 import { exportBracketImage } from "../utils/exportUtils";
 
 export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleTournament, getTeam, setError }) {
@@ -228,15 +228,18 @@ export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleT
   }
 
   const manualQualifiedCodes = useMemo(() => new Set(manualTournament?.qualifiedForRoundOf32 ?? []), [manualTournament]);
-  const manualDisplayedGoalData = useMemo(
-    () => deriveDisplayedTournamentGoalData(manualTournament, manualTournament?.thirdPlaceMatch, teams, getTeam),
+  const manualRecapData = useMemo(
+    () => deriveTournamentRecapData(manualTournament, manualTournament?.thirdPlaceMatch, teams, getTeam),
     [manualTournament, teams, getTeam],
   );
-  const manualAverageGoals = manualDisplayedGoalData?.totalMatches
-    ? manualDisplayedGoalData.totalGoals / manualDisplayedGoalData.totalMatches
-    : null;
-  const manualTopScorerGoals = manualDisplayedGoalData?.topGoals ?? null;
-  const manualTopScoringTeams = manualDisplayedGoalData?.topTeams ?? null;
+  const hasManualRecapStats = (manualRecapData?.completedMatches ?? 0) > 0;
+  const manualAverageGoals = manualRecapData?.averageGoals ?? null;
+  const manualTopScorerGoals = hasManualRecapStats ? (manualRecapData?.topGoals ?? null) : null;
+  const manualTopScoringTeams = hasManualRecapStats && (manualRecapData?.topGoals ?? 0) > 0
+    ? (manualRecapData?.topScorers ?? [])
+    : [];
+  const manualBestDefenseGoalsAgainst = hasManualRecapStats ? (manualRecapData?.minConceded ?? null) : null;
+  const manualBestDefenseTeams = hasManualRecapStats ? (manualRecapData?.bestDefenseTeams ?? []) : [];
 
   const resetModalConfig = {
     groups: {
@@ -289,6 +292,8 @@ export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleT
     manualAverageGoals,
     manualTopScorerGoals,
     manualTopScoringTeams,
+    manualBestDefenseGoalsAgainst,
+    manualBestDefenseTeams,
     resetModalConfig,
     handleManualGroupScoreChange,
     handleManualGroupQuickPick,

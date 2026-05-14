@@ -681,6 +681,15 @@ table {
   z-index: 1;
 }
 
+.stat-detail {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  font-weight: 700;
+  position: relative;
+  z-index: 1;
+}
+
 .winner-inline {
   display: inline-flex;
   align-items: center;
@@ -816,6 +825,56 @@ table {
   margin-top: 16px;
   padding-top: 18px;
   border-top: 1px solid var(--border-primary);
+}
+
+.dashboard-panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.dashboard-head-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.dashboard-head-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-primary);
+  background:
+    linear-gradient(135deg, rgba(217, 164, 65, 0.1), transparent 60%),
+    var(--bg-card-alt);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.dashboard-head-chip strong {
+  color: var(--text-primary);
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dashboard-head-chip-count {
+  color: var(--text-primary);
+}
+
+.dashboard-head-chip-team {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 4px;
 }
 
 .result-meta-row {
@@ -1020,14 +1079,37 @@ table {
   align-items: center;
 }
 
+.dashboard-team-copy {
+  min-width: 0;
+}
+
 .dashboard-team-name {
   font-weight: 700;
   font-size: 0.98rem;
 }
 
+.dashboard-team-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .dashboard-team-meta {
   color: var(--text-secondary);
   font-size: 0.84rem;
+}
+
+.dashboard-trophy-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(217, 164, 65, 0.12);
+  color: var(--accent-primary);
+  font-size: 0.76rem;
+  font-weight: 900;
 }
 
 .dashboard-bar-track {
@@ -1241,7 +1323,7 @@ table {
 .bracketology-grid {
   --bracket-gap-line: clamp(10px, 0.9vw, 18px);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.3fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) clamp(320px, 24vw, 420px) minmax(0, 1fr);
   gap: clamp(14px, 1vw, 24px);
   align-items: start;
   width: 100%;
@@ -1380,9 +1462,12 @@ table {
 .bracket-finals-core {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
   gap: 0;
   padding-top: 140px;
+  width: 100%;
+  max-width: clamp(320px, 24vw, 420px);
+  justify-self: center;
 }
 
 .bracket-finals-matches {
@@ -1391,12 +1476,20 @@ table {
   gap: 22px;
   padding-top: 110px;
   width: 100%;
+  justify-items: center;
+}
+
+.bracket-finals-section {
+  display: grid;
+  justify-items: center;
+  width: 100%;
 }
 
 .bracket-finals-stack {
   display: grid;
   gap: 12px;
   justify-items: center;
+  width: 100%;
 }
 
 .bracket-match-card {
@@ -3837,6 +3930,15 @@ table {
 
   .groups-grid {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-panel-head,
+  .dashboard-head-chips {
+    width: 100%;
+  }
+
+  .dashboard-head-chips {
+    justify-content: flex-start;
   }
 
   .dashboard-bar-row {

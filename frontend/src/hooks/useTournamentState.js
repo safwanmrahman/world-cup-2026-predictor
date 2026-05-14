@@ -49,6 +49,14 @@ export function useTournamentState() {
 
   const activeBracketHighlightTeamCode = pinnedBracketTeamCode ?? hoveredBracketTeamCode;
 
+  function switchSimulatorTab(tabId) {
+    setActiveSimulatorTab(tabId);
+  }
+
+  function switchSimulatorToRecap() {
+    switchSimulatorTab("recap");
+  }
+
   useEffect(() => {
     setHoveredBracketTeamCode(null);
     setPinnedBracketTeamCode(null);
@@ -204,6 +212,7 @@ export function useTournamentState() {
       const data = await response.json();
       startTransition(() => {
         setSampleTournament(data);
+        switchSimulatorToRecap();
         setSimulating(false);
       });
     } catch (caughtError) {
@@ -233,6 +242,7 @@ export function useTournamentState() {
       startTransition(() => {
         setSimulationData(data);
         setSampleTournament(data.sample_tournament);
+        switchSimulatorToRecap();
         setSimulating(false);
       });
     } catch (caughtError) {
@@ -374,7 +384,7 @@ export function useTournamentState() {
     loadingInitial,
     activeSimulationAction,
     activeSimulatorTab,
-    setActiveSimulatorTab,
+    setActiveSimulatorTab: switchSimulatorTab,
     activeBracketHighlightTeamCode,
     displayedGroups,
     qualifiedGroupCodes,

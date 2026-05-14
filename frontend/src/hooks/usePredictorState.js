@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  MANUAL_SHARE_PREFIX,
   applyGroupOverride,
   autoFillRemainingPrediction,
   buildManualTournament,
@@ -31,18 +32,29 @@ export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleT
   const [activeManualTab, setActiveManualTab] = useState("groups");
   const manualBracketRef = useRef(null);
 
+  function switchManualTab(tabId) {
+    setActiveManualTab(tabId);
+  }
+
+  function switchManualToRecap() {
+    switchManualTab("recap");
+  }
+
+  function switchManualToGroups() {
+    switchManualTab("groups");
+  }
+
   useEffect(() => {
     if (!groups.length || !fixtures.length) {
       return;
     }
 
-    const navigationEntry = window.performance?.getEntriesByType?.("navigation")?.[0];
-    const isReloadNavigation = navigationEntry?.type === "reload"
-      || window.performance?.navigation?.type === window.performance?.navigation?.TYPE_RELOAD;
-    const loaded = isReloadNavigation
-      ? resetManualPrediction(groups, fixtures)
-      : loadManualPredictionState(groups, fixtures);
+    const hasSharedPrediction = window.location.hash.startsWith(MANUAL_SHARE_PREFIX);
+    const loaded = hasSharedPrediction
+      ? loadManualPredictionState(groups, fixtures)
+      : resetManualPrediction(groups, fixtures);
     setManualPredictionState(loaded);
+    switchManualToGroups();
   }, [groups, fixtures]);
 
   const manualTournament = useMemo(() => {
@@ -140,6 +152,7 @@ export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleT
     setManualSaved(false);
     setManualPredictionState((current) => autoFillRemainingPrediction(current, groups, fixtures, teamLookup));
     setShareStatus("Remaining picks auto-filled");
+    switchManualToRecap();
   }
 
   function handleOpenResetConfirmation(action) {
@@ -169,6 +182,7 @@ export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleT
       setShareStatus("Manual prediction reset");
     }
 
+    switchManualToGroups();
     setPendingResetAction(null);
   }
 
@@ -270,7 +284,7 @@ export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleT
     manualSaved,
     shareStatus,
     activeManualTab,
-    setActiveManualTab,
+    setActiveManualTab: switchManualTab,
     manualQualifiedCodes,
     manualAverageGoals,
     manualTopScorerGoals,

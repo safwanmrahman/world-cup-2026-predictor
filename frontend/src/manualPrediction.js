@@ -945,13 +945,18 @@ export function applyGroupOverride(groupName, currentOrder, teamCode, direction,
 }
 
 export function updateGroupScore(state, match, side, value) {
+  const scoreKey = side === "home" ? "homeGoals" : side === "away" ? "awayGoals" : side;
+  if (scoreKey !== "homeGoals" && scoreKey !== "awayGoals") {
+    return state;
+  }
+
   const entry = {
     ...createDefaultGroupScoreState(),
     ...(state.groupScores[match.match_id] ?? {}),
   };
   const nextEntry = {
     ...entry,
-    [side]: validateScoreInput(value),
+    [scoreKey]: validateScoreInput(value),
   };
   const homeGoals = parseScore(nextEntry.homeGoals);
   const awayGoals = parseScore(nextEntry.awayGoals);

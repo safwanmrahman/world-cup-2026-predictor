@@ -137,7 +137,11 @@ export default function KnockoutBracket({
               <div className="bracket-finals-stack">
                 {bracket.final.map((match) => (
                   renderMatch
-                    ? <div key={match.match_id}>{renderMatch({ ...match, className: "world-cup-final-card" })}</div>
+                    ? (
+                      <div key={match.match_id} className="bracket-final-card-wrap">
+                        {renderMatch({ ...match, className: "world-cup-final-card" })}
+                      </div>
+                    )
                     : <KnockoutMatchCard key={match.match_id} match={match} getTeam={getTeam} className="world-cup-final-card" onOpenDetails={onOpenDetails} highlightedTeamCode={highlightedTeamCode} onTeamHover={onTeamHover} onTeamLeave={onTeamLeave} onTeamPin={onTeamPin} />
                 ))}
               </div>

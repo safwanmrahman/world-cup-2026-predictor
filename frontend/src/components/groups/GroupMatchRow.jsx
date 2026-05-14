@@ -10,7 +10,10 @@ export function ManualGroupScoreInput({ value, onChange }) {
       min="0"
       max="20"
       className="manual-score-input"
-      value={value}
+      inputMode="numeric"
+      value={value ?? ""}
+      onClick={(event) => event.stopPropagation()}
+      onMouseDown={(event) => event.stopPropagation()}
       onChange={(event) => onChange(validateScoreInput(event.target.value))}
     />
   );
@@ -46,11 +49,11 @@ export default function GroupMatchRow({ match, getTeam, onScoreChange, onQuickPi
           <TeamFlag code={match.home_team} size="sm" alt={`${home?.name ?? match.home_team} flag`} />
           <span>{home?.name ?? match.home_team}</span>
         </Button>
-        <ManualGroupScoreInput value={match.home_goals ?? ""} onChange={(value) => onScoreChange(match, "home", value)} />
+        <ManualGroupScoreInput value={match.home_goals ?? ""} onChange={(value) => onScoreChange(match, "homeGoals", value)} />
         <Button className={`manual-draw-button ${match.selected_outcome === "draw" ? "active" : ""}`} onClick={() => onQuickPick(match, "draw")}>
           Draw
         </Button>
-        <ManualGroupScoreInput value={match.away_goals ?? ""} onChange={(value) => onScoreChange(match, "away", value)} />
+        <ManualGroupScoreInput value={match.away_goals ?? ""} onChange={(value) => onScoreChange(match, "awayGoals", value)} />
         <Button className={`manual-pick-button manual-pick-button-right ${match.selected_outcome === "teamB" ? "active" : ""}`} onClick={() => onQuickPick(match, "teamB")}>
           <span>{away?.name ?? match.away_team}</span>
           <TeamFlag code={match.away_team} size="sm" alt={`${away?.name ?? match.away_team} flag`} />

@@ -107,6 +107,8 @@ function App() {
     handleBracketTeamLeave: tournament.handleBracketTeamLeave,
     handleBracketTeamPin: tournament.handleBracketTeamPin,
     handleOpenKnockoutDetails: tournament.handleOpenKnockoutDetails,
+    handleKnockoutMatchChange: predictor.handleKnockoutMatchChange,
+    handleKnockoutQuickPick: predictor.handleKnockoutQuickPick,
     teams: tournament.teams,
     manualBracketRef: predictor.manualBracketRef,
   };

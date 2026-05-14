@@ -22,6 +22,8 @@ export default function PredictorModeView(props) {
     handleBracketTeamLeave,
     handleBracketTeamPin,
     handleOpenKnockoutDetails,
+    handleKnockoutMatchChange,
+    handleKnockoutQuickPick,
     teams,
     manualBracketRef,
   } = props;
@@ -80,6 +82,8 @@ export default function PredictorModeView(props) {
                   match={match}
                   getTeam={getTeam}
                   onOpenDetails={(editableMatch) => handleOpenKnockoutDetails(editableMatch, "manual")}
+                  onMatchChange={handleKnockoutMatchChange}
+                  onQuickPick={handleKnockoutQuickPick}
                   highlightedTeamCode={activeBracketHighlightTeamCode}
                   onTeamHover={handleBracketTeamHover}
                   onTeamLeave={handleBracketTeamLeave}

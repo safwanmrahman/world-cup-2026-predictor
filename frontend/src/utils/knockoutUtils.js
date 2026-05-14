@@ -1,3 +1,6 @@
+export const SLIGHT_UPSET_RANKING_GAP = 8;
+export const MAJOR_UPSET_RANKING_GAP = 15;
+
 export function getLowerRatedTeamCode(homeTeam, awayTeam) {
   if (!homeTeam || !awayTeam) {
     return null;
@@ -12,15 +15,49 @@ export function getLowerRatedTeamCode(homeTeam, awayTeam) {
   return homeElo < awayElo ? homeTeam.code : awayTeam.code;
 }
 
-export function isKnockoutUpset(match, getTeam) {
+export function getUpsetClassification(winnerTeam, loserTeam) {
+  if (!winnerTeam || !loserTeam) {
+    return { type: "none", gap: 0, label: "" };
+  }
+
+  const winnerRanking = winnerTeam.fifa_ranking;
+  const loserRanking = loserTeam.fifa_ranking;
+  if (!Number.isFinite(winnerRanking) || !Number.isFinite(loserRanking)) {
+    return { type: "none", gap: 0, label: "" };
+  }
+
+  const gap = winnerRanking - loserRanking;
+  if (gap >= MAJOR_UPSET_RANKING_GAP) {
+    return { type: "major", gap, label: "Major upset" };
+  }
+
+  if (gap >= SLIGHT_UPSET_RANKING_GAP) {
+    return { type: "slight", gap, label: "Slight upset" };
+  }
+
+  return { type: "none", gap, label: "" };
+}
+
+export function getKnockoutUpset(match, getTeam) {
   if (!match?.home_team || !match?.away_team || !match?.winner) {
-    return false;
+    return { type: "none", gap: 0, label: "", winner: null, loser: null };
   }
 
   const homeTeam = getTeam(match.home_team);
   const awayTeam = getTeam(match.away_team);
-  const lowerRatedCode = getLowerRatedTeamCode(homeTeam, awayTeam);
-  return lowerRatedCode != null && match.winner === lowerRatedCode;
+  const winnerTeam = match.winner === homeTeam?.code ? homeTeam : match.winner === awayTeam?.code ? awayTeam : null;
+  const loserTeam = winnerTeam?.code === homeTeam?.code ? awayTeam : winnerTeam?.code === awayTeam?.code ? homeTeam : null;
+  const upset = getUpsetClassification(winnerTeam, loserTeam);
+
+  return {
+    ...upset,
+    winner: winnerTeam,
+    loser: loserTeam,
+  };
+}
+
+export function isKnockoutUpset(match, getTeam) {
+  return getKnockoutUpset(match, getTeam).type !== "none";
 }
 
 export function getTournamentKnockoutMatches(tournament, thirdPlaceMatch) {

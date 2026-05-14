@@ -87,7 +87,7 @@ export default function TournamentRecap({
           </span>
         </span>
       ) : "--",
-      detail: recap.biggestUpset ? `${recap.biggestUpset.rankingSwing} ranking places lower` : "No major upset yet",
+      detail: recap.biggestUpset ? `${recap.biggestUpset.upsetLabel} · ${recap.biggestUpset.rankingSwing} ranking places lower` : "No knockout upset yet",
       icon: <FireIcon />,
       tone: "fire",
     },
@@ -210,7 +210,7 @@ export default function TournamentRecap({
           <div className="section-kicker">Upset Watch</div>
           <h3 className="recap-card-title">Biggest Upset</h3>
           {recap.biggestUpset ? (
-            <div className="recap-upset recap-upset-editorial">
+            <div className={`recap-upset recap-upset-editorial recap-upset-editorial-${recap.biggestUpset.upsetType}`}>
               <div className="recap-award-icon"><FireIcon /></div>
               <strong className="recap-inline-team"><TeamFlag code={recap.biggestUpset.winner.code} size="sm" alt={`${recap.biggestUpset.winner.name} flag`} />{recap.biggestUpset.winner.name}</strong>
               <span className="recap-upset-copy recap-upset-line">
@@ -218,9 +218,9 @@ export default function TournamentRecap({
                 <span className="recap-inline-team"><TeamFlag code={recap.biggestUpset.loser.code} size="sm" alt={`${recap.biggestUpset.loser.name} flag`} />{recap.biggestUpset.loser.name}</span>
                 in the {recap.biggestUpset.match.round}
               </span>
-              <small>{recap.biggestUpset.rankingSwing} ranking places lower</small>
+              <small>{recap.biggestUpset.upsetLabel} · {recap.biggestUpset.rankingSwing} ranking places lower</small>
             </div>
-          ) : <EmptyState>No major knockout upset yet.</EmptyState>}
+          ) : <EmptyState>No knockout upset yet.</EmptyState>}
         </section>
       </div>
       <div className="recap-bottom-grid">

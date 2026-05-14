@@ -1,4 +1,5 @@
 import { formatMatchScore } from "./formattingUtils";
+import { getUpsetClassification } from "./knockoutUtils";
 
 export function deriveDisplayedTournamentGoalData(tournament, thirdPlaceMatch, teams, getTeam) {
   if (!tournament) {
@@ -112,13 +113,17 @@ export function deriveTournamentRecapData(tournament, thirdPlaceMatch, teams, ge
       return best;
     }
 
-    const rankingSwing = winner.fifa_ranking - loser.fifa_ranking;
-    if (rankingSwing <= 0) {
+    const upset = getUpsetClassification(winner, loser);
+    if (upset.type === "none") {
       return best;
     }
 
-    if (!best || rankingSwing > best.rankingSwing) {
-      return { match, winner, loser, rankingSwing };
+    if (
+      !best
+      || upset.gap > best.rankingSwing
+      || (upset.gap === best.rankingSwing && upset.type === "major" && best.upsetType !== "major")
+    ) {
+      return { match, winner, loser, rankingSwing: upset.gap, upsetType: upset.type, upsetLabel: upset.label };
     }
 
     return best;

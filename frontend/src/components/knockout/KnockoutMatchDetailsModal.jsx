@@ -3,10 +3,10 @@ import { API_BASE_URL } from "../../data/constants";
 import { validateScoreInput } from "../../manualPrediction";
 import { formatMatchScore, formatPercent } from "../../utils/formattingUtils";
 import {
+  getKnockoutUpset,
   getKnockoutMatchOpponent,
   getLowerRatedTeamCode,
   getTeamPreviousKnockoutMatch,
-  isKnockoutUpset,
 } from "../../utils/knockoutUtils";
 import Modal from "../shared/Modal";
 import Badge from "../shared/Badge";
@@ -90,7 +90,7 @@ export default function KnockoutMatchDetailsModal({
   const homeTeam = getTeam(match.home_team);
   const awayTeam = getTeam(match.away_team);
   const winner = match.winner ? getTeam(match.winner) : null;
-  const upset = isKnockoutUpset(match, getTeam);
+  const upset = getKnockoutUpset(match, getTeam);
   const lowerRatedCode = getLowerRatedTeamCode(homeTeam, awayTeam);
   const lowerRatedTeam = lowerRatedCode ? getTeam(lowerRatedCode) : null;
   const favoriteTeam = lowerRatedCode === homeTeam?.code ? awayTeam : lowerRatedCode === awayTeam?.code ? homeTeam : null;
@@ -101,7 +101,6 @@ export default function KnockoutMatchDetailsModal({
   const awayPreviousOpponent = awayPrevious ? getTeam(getKnockoutMatchOpponent(awayPrevious, match.away_team)) : null;
   const homeAdvanceProbability = probabilityData?.probabilities.home_advance ?? null;
   const awayAdvanceProbability = probabilityData?.probabilities.away_advance ?? null;
-  const rankingGap = homeTeam?.fifa_ranking != null && awayTeam?.fifa_ranking != null ? Math.abs(homeTeam.fifa_ranking - awayTeam.fifa_ranking) : null;
   const tieAfterNinety = match.home_goals != null && match.away_goals != null && match.home_goals === match.away_goals;
   const manualStatusLabels = mode === "manual" ? getManualMatchStatus(match) : [];
 
@@ -167,12 +166,22 @@ export default function KnockoutMatchDetailsModal({
           {mode === "simulator" ? (
             <>
               <div className="knockout-status-line"><strong>Winner:</strong> {winner?.name ?? "Pending"}</div>
-              {upset ? <div className="knockout-upset-indicator"><FireIcon /><span>Major upset: {lowerRatedTeam?.name ?? "Lower-rated team"} eliminated {favoriteTeam?.name ?? "the favorite"} despite trailing by {rankingGap ?? "--"} FIFA ranking places.</span></div> : null}
+              {upset.type !== "none" ? (
+                <div className={`knockout-upset-indicator knockout-upset-indicator-${upset.type}`}>
+                  <FireIcon />
+                  <span>{upset.label}: {upset.winner?.name ?? "Lower-ranked team"} eliminated {upset.loser?.name ?? "the favorite"} despite trailing by {upset.gap} FIFA ranking places.</span>
+                </div>
+              ) : null}
             </>
           ) : (
             <>
               <div className="knockout-status-line"><strong>Current Pick:</strong> {currentPickLabel}</div>
-              {upset ? <div className="knockout-upset-indicator"><FireIcon /><span>Major upset: {lowerRatedTeam?.name ?? "Lower-rated team"} is currently picked over {favoriteTeam?.name ?? "the favorite"} despite a {rankingGap ?? "--"}-place ranking gap.</span></div> : null}
+              {upset.type !== "none" ? (
+                <div className={`knockout-upset-indicator knockout-upset-indicator-${upset.type}`}>
+                  <FireIcon />
+                  <span>{upset.label}: {upset.winner?.name ?? "Lower-ranked team"} is currently picked over {upset.loser?.name ?? "the favorite"} despite trailing by {upset.gap} FIFA ranking places.</span>
+                </div>
+              ) : null}
               <div className="knockout-editor-panel">
                 <div className="section-kicker">Edit Prediction</div>
                 <div className="knockout-editor-status">

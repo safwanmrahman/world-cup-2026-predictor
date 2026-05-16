@@ -8,16 +8,20 @@ from fastapi.middleware.cors import CORSMiddleware
 
 
 def _load_local_env() -> None:
-    env_path = Path(__file__).resolve().parents[2] / ".env"
-    if not env_path.exists():
-        return
+    project_root = Path(__file__).resolve().parents[2]
+    candidate_paths = [project_root / "backend" / ".env", project_root / ".env"]
 
-    for line in env_path.read_text(encoding="utf-8").splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or "=" not in stripped:
+    for env_path in candidate_paths:
+        if not env_path.exists():
             continue
-        key, value = stripped.split("=", 1)
-        os.environ.setdefault(key.strip(), value.strip())
+
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or "=" not in stripped:
+                continue
+            key, value = stripped.split("=", 1)
+            cleaned_value = value.strip().strip("\"'")
+            os.environ.setdefault(key.strip(), cleaned_value)
 
 
 def _parse_bool(value: str | None, default: bool) -> bool:
@@ -26,9 +30,13 @@ def _parse_bool(value: str | None, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
-def _parse_origins(value: str | None) -> list[str]:
+def _parse_origins(value: str | None, *, app_env: str) -> list[str]:
     if not value:
+        if app_env == "production":
+            return []
         return ["http://localhost:5173", "http://127.0.0.1:5173"]
+    if value.strip() == "*":
+        return ["*"]
     return [origin.strip() for origin in value.split(",") if origin.strip()]
 
 
@@ -48,7 +56,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_parse_origins(os.getenv("ALLOWED_ORIGINS")),
+    allow_origins=_parse_origins(os.getenv("ALLOWED_ORIGINS"), app_env=app_env),
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

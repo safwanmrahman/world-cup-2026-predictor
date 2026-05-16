@@ -1,7 +1,26 @@
 const DEFAULT_LOCAL_API_BASE_URL = "http://127.0.0.1:8000";
-const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
 
-export const API_BASE_URL = configuredApiBaseUrl || DEFAULT_LOCAL_API_BASE_URL;
+function normalizeApiBaseUrl(value) {
+  if (!value) {
+    return "";
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  return trimmed.endsWith("/") ? trimmed.slice(0, -1) : trimmed;
+}
+
+const configuredApiBaseUrl = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
+export const API_BASE_URL = configuredApiBaseUrl || (import.meta.env.DEV ? DEFAULT_LOCAL_API_BASE_URL : "");
+
+export function buildApiUrl(path) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return API_BASE_URL ? `${API_BASE_URL}${normalizedPath}` : normalizedPath;
+}
+
 export const THEME_STORAGE_KEY = "wc26-theme";
 export const DEFAULT_SIMULATION_COUNT = 100;
 export const DEFAULT_CUSTOM_SIMULATION_COUNT = 100;

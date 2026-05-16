@@ -1,5 +1,5 @@
 import { startTransition, useEffect, useMemo, useState } from "react";
-import { API_BASE_URL, DEFAULT_CUSTOM_SIMULATION_COUNT } from "../data/constants";
+import { DEFAULT_CUSTOM_SIMULATION_COUNT, buildApiUrl } from "../data/constants";
 import {
   compareProbabilityRows,
   getTournamentKnockoutMatches,
@@ -67,9 +67,9 @@ export function useTournamentState() {
       try {
         setLoadingInitial(true);
         const [groupsResponse, teamsResponse, fixturesResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/groups`),
-          fetch(`${API_BASE_URL}/teams`),
-          fetch(`${API_BASE_URL}/fixtures`),
+          fetch(buildApiUrl("/groups")),
+          fetch(buildApiUrl("/teams")),
+          fetch(buildApiUrl("/fixtures")),
         ]);
 
         if (!groupsResponse.ok || !teamsResponse.ok || !fixturesResponse.ok) {
@@ -114,7 +114,7 @@ export function useTournamentState() {
       }
 
       try {
-        const response = await fetch(`${API_BASE_URL}/predict-match`, {
+        const response = await fetch(buildApiUrl("/predict-match"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -180,7 +180,7 @@ export function useTournamentState() {
     setError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/predict-match`, {
+      const response = await fetch(buildApiUrl("/predict-match"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(predictionForm),
@@ -206,7 +206,7 @@ export function useTournamentState() {
 
     try {
       await waitForNextPaint();
-      const response = await fetch(`${API_BASE_URL}/simulate-one`, { method: "POST" });
+      const response = await fetch(buildApiUrl("/simulate-one"), { method: "POST" });
       if (!response.ok) {
         throw new Error(await readErrorMessage(response, "Single tournament simulation failed."));
       }
@@ -229,7 +229,7 @@ export function useTournamentState() {
 
     try {
       await waitForNextPaint();
-      const response = await fetch(`${API_BASE_URL}/simulate-tournament`, {
+      const response = await fetch(buildApiUrl("/simulate-tournament"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ simulations: count }),

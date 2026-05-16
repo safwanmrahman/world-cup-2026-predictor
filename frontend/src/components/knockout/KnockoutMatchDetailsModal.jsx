@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { API_BASE_URL } from "../../data/constants";
+import { buildApiUrl } from "../../data/constants";
 import { validateScoreInput } from "../../manualPrediction";
 import { formatMatchScore, formatPercent } from "../../utils/formattingUtils";
 import {
@@ -60,7 +60,7 @@ export default function KnockoutMatchDetailsModal({
       }
 
       try {
-        const response = await fetch(`${API_BASE_URL}/predict-match`, {
+        const response = await fetch(buildApiUrl("/predict-match"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

@@ -1,4 +1,4 @@
-# World Cup 2026 Simulator
+# World Cup 2026 Predictor
 
 A full-stack World Cup predictor and simulator with a Vite + React frontend, a FastAPI backend, and repo-local tournament JSON data.
 

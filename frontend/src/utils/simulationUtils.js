@@ -1,6 +1,27 @@
 import { formatMatchScore } from "./formattingUtils";
 import { getUpsetClassification } from "./knockoutUtils";
 
+function formatChampionPathScore(match, championCode) {
+  if (
+    !match
+    || !championCode
+    || match.home_goals == null
+    || match.away_goals == null
+  ) {
+    return formatMatchScore(match);
+  }
+
+  if (match.home_team === championCode) {
+    return `${match.home_goals} - ${match.away_goals}`;
+  }
+
+  if (match.away_team === championCode) {
+    return `${match.away_goals} - ${match.home_goals}`;
+  }
+
+  return formatMatchScore(match);
+}
+
 export function deriveDisplayedTournamentGoalData(tournament, thirdPlaceMatch, teams, getTeam) {
   if (!tournament) {
     return null;
@@ -159,7 +180,7 @@ export function deriveTournamentRecapData(tournament, thirdPlaceMatch, teams, ge
           return {
             round: match.round,
             opponent: getTeam(opponentCode),
-            score: formatMatchScore(match),
+            score: formatChampionPathScore(match, champion.code),
             decision: match.decision,
             penalties: match.penalties ?? null,
           };

@@ -1,13 +1,45 @@
 # World Cup 2026 Predictor
 
-A full-stack World Cup predictor and simulator with a Vite + React frontend, a FastAPI backend, and repo-local tournament JSON data.
+World Cup 2026 Predictor is a polished full-stack tournament simulator and match prediction platform built for the expanded 48-team FIFA World Cup format. It combines score-based match predictions, live tournament state, knockout progression, Monte Carlo simulation, and recap analytics in a production-ready web experience that is fully deployed online.
+
+## Live Demo
+
+**https://world-cup-2026-predictor-ashy.vercel.app/**
+
+## Features
+
+- 48-team World Cup simulation covering groups, third-place qualification, and the full knockout bracket
+- Score-based match prediction powered by backend probability and simulation logic
+- Live group tables with automatic standings updates as results change
+- Knockout bracket simulation for Round of 32 through the Final
+- Monte Carlo tournament simulation for large-batch outcome analysis
+- Realistic penalty shootouts using kick-by-kick stopping logic and sudden death
+- Upset classification system for knockout results and recap storytelling
+- Predictor Mode for manual picks and Simulator Mode for automated runs
+- Recap and dashboard analytics including champion paths, probabilities, and tournament awards
+- Dark and light mode support for the full interface
 
 ## Tech Stack
 
 - Frontend: React 19, Vite 7, plain CSS
 - Backend: FastAPI, Uvicorn
-- Data: `data/*.json`
-- Deployment shape: static frontend + separate Python API
+- Data: repo-local JSON tournament datasets in `data/`
+- State: browser local storage and shareable URL hash support for predictor mode
+- Deployment: Vercel frontend + Render backend
+
+## Production Deployment
+
+The app is fully deployed in production:
+
+- Frontend hosted on Vercel
+- Backend hosted on Render
+
+Recent production-readiness improvements include:
+
+- realistic penalty shootout logic
+- improved upset classification logic
+- production deployment support
+- stable frontend/backend integration via environment-based API configuration
 
 ## Project Structure
 
@@ -63,7 +95,7 @@ VITE_API_BASE_URL=http://127.0.0.1:8000
 
 Notes:
 
-- Local dev falls back to `http://127.0.0.1:8000` if `VITE_API_BASE_URL` is unset.
+- Local development falls back to `http://127.0.0.1:8000` if `VITE_API_BASE_URL` is unset.
 - Production builds do not fall back to localhost. Set `VITE_API_BASE_URL` to your deployed backend URL.
 
 ### Backend
@@ -124,28 +156,26 @@ Local URLs:
 - Backend: `http://127.0.0.1:8000`
 - API docs: `http://127.0.0.1:8000/docs`
 
-## Production Deployment
+## Deployment
 
-Recommended split:
+Recommended deployment shape:
 
-- Backend on Render, Railway, or Fly.io
-- Frontend on Vercel or Netlify
+- Frontend on Vercel
+- Backend on Render
 
-### Backend
+Frontend:
 
-Build command:
+- Root directory: `frontend`
+- Build command: `npm run build`
+- Output directory: `dist`
+- Required env: `VITE_API_BASE_URL=https://your-backend-domain.example`
 
-```bash
-pip install -r requirements.txt
-```
+Backend:
 
-Start command:
-
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
-```
-
-Required production env:
+- Deploy from the repo root so the API can access the shared `data/` directory
+- Build command: `cd backend && pip install -r requirements.txt`
+- Start command: `cd backend && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}`
+- Required env:
 
 ```text
 APP_ENV=production
@@ -153,50 +183,12 @@ ENABLE_API_DOCS=false
 ALLOWED_ORIGINS=https://your-frontend-domain.example
 ```
 
-Recommended working-directory setup:
+Deployment notes:
 
-- Use `backend` as the service root or working directory.
-- Keep the full repo available in the deployment so the API can read the shared `data/` directory.
-
-Provider notes:
-
-- Render: create a Web Service rooted at `backend`, use the start command above, and set `ALLOWED_ORIGINS` to your frontend origin.
-- Railway: set the root directory to `backend`, add the same env vars, and use the same start command.
-- Fly.io: deploy the Python service from `backend`, expose the platform `PORT`, and set `ALLOWED_ORIGINS` to the public frontend domain.
-
-### Frontend
-
-Build command:
-
-```bash
-npm run build
-```
-
-Publish directory:
-
-```text
-dist
-```
-
-Required production env:
-
-```text
-VITE_API_BASE_URL=https://your-backend-domain.example
-```
-
-Provider notes:
-
-- Vercel: set the root directory to `frontend`, configure `VITE_API_BASE_URL`, and deploy. `frontend/vercel.json` rewrites all paths to `index.html`.
-- Netlify: set the base directory to `frontend`, publish `dist`, configure `VITE_API_BASE_URL`, and deploy. `frontend/public/_redirects` provides SPA refresh and deep-link fallback.
-
-## Deployment Readiness Notes
-
-- Frontend API calls now use `VITE_API_BASE_URL` when provided instead of shipping a production localhost fallback.
-- Local frontend development still works with the existing backend default on `127.0.0.1:8000`.
+- Frontend API calls use `VITE_API_BASE_URL` when provided.
 - Backend CORS is controlled through `ALLOWED_ORIGINS`.
-- In production, missing `ALLOWED_ORIGINS` now resolves to no allowed origins instead of a localhost-only fallback.
-- Static assets in `frontend/public/` remain deploy-safe through the Vite build.
-- Deep links and refreshes are covered for Vercel and Netlify SPA hosting.
+- In production, missing `ALLOWED_ORIGINS` resolves to no allowed origins.
+- SPA deep links and refreshes are supported by `frontend/vercel.json`.
 
 ## Verification
 
@@ -211,7 +203,8 @@ Backend syntax/import sanity check:
 
 ```bash
 cd backend
-python3 -m compileall app
+env PYTHONPYCACHEPREFIX=/tmp/wc26-pyc-cache python3 -m compileall app
+./.venv/bin/python -c 'from app.main import app; print(app.title)'
 ```
 
 ## Favicon Assets

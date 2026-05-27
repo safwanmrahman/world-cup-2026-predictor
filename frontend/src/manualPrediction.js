@@ -200,14 +200,78 @@ function teamElo(team) {
   return team?.elo_rating ?? team?.elo ?? 1500;
 }
 
+const PENALTY_REGULATION_KICKS = 5;
+const PENALTY_SUDDEN_DEATH_CAP = 10;
+const PENALTY_BASE_CONVERSION_RATE = 0.74;
+const PENALTY_WINNER_EDGE = 0.04;
+const PENALTY_ROUND_SWING = 0.015;
+
+function penaltyConversionRate(isDesignatedWinner, roundIndex) {
+  const baseRate = PENALTY_BASE_CONVERSION_RATE
+    + (isDesignatedWinner ? PENALTY_WINNER_EDGE : -PENALTY_WINNER_EDGE)
+    - (roundIndex >= PENALTY_REGULATION_KICKS ? 0.01 : roundIndex * PENALTY_ROUND_SWING);
+  return Math.min(0.9, Math.max(0.58, baseRate));
+}
+
+function simulatePenaltyShootoutAttempt(selectedHome) {
+  const scores = { home: 0, away: 0 };
+  const kicksTaken = { home: 0, away: 0 };
+  const winnerSide = selectedHome ? "home" : "away";
+  const sides = ["home", "away"];
+
+  for (let roundIndex = 0; roundIndex < PENALTY_REGULATION_KICKS; roundIndex += 1) {
+    for (const side of sides) {
+      const kickIndex = kicksTaken[side];
+      const conversionRate = penaltyConversionRate(side === winnerSide, kickIndex);
+      if (Math.random() < conversionRate) {
+        scores[side] += 1;
+      }
+      kicksTaken[side] += 1;
+
+      const otherSide = side === "home" ? "away" : "home";
+      const remainingSide = PENALTY_REGULATION_KICKS - kicksTaken[side];
+      const remainingOther = PENALTY_REGULATION_KICKS - kicksTaken[otherSide];
+
+      if (scores[side] > scores[otherSide] + remainingOther) {
+        return scores;
+      }
+      if (scores[otherSide] > scores[side] + remainingSide) {
+        return scores;
+      }
+    }
+  }
+
+  if (scores.home !== scores.away) {
+    return scores[winnerSide] > scores[winnerSide === "home" ? "away" : "home"] ? scores : null;
+  }
+
+  for (let suddenDeathRound = 0; suddenDeathRound < PENALTY_SUDDEN_DEATH_CAP; suddenDeathRound += 1) {
+    for (const side of sides) {
+      const kickIndex = PENALTY_REGULATION_KICKS + suddenDeathRound;
+      const conversionRate = penaltyConversionRate(side === winnerSide, kickIndex);
+      if (Math.random() < conversionRate) {
+        scores[side] += 1;
+      }
+      kicksTaken[side] += 1;
+    }
+
+    if (scores.home !== scores.away) {
+      return scores[winnerSide] > scores[winnerSide === "home" ? "away" : "home"] ? scores : null;
+    }
+  }
+
+  return null;
+}
+
 function buildPenaltyShootout() {
-  return weightedPick([
-    { value: { home: 4, away: 3 }, weight: 34 },
-    { value: { home: 5, away: 4 }, weight: 24 },
-    { value: { home: 3, away: 2 }, weight: 18 },
-    { value: { home: 4, away: 2 }, weight: 14 },
-    { value: { home: 5, away: 3 }, weight: 10 },
-  ]);
+  for (let attempt = 0; attempt < 24; attempt += 1) {
+    const result = simulatePenaltyShootoutAttempt(true);
+    if (result) {
+      return result;
+    }
+  }
+
+  return { home: 6, away: 5 };
 }
 
 function flipScore(score) {

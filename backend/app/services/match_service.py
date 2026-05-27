@@ -55,13 +55,77 @@ def knockout_advance_probabilities(
     return home_advance, away_advance
 
 
+PENALTY_REGULATION_KICKS = 5
+PENALTY_SUDDEN_DEATH_CAP = 10
+PENALTY_BASE_CONVERSION_RATE = 0.74
+PENALTY_WINNER_EDGE = 0.04
+PENALTY_ROUND_SWING = 0.015
+
+
+def _penalty_conversion_rate(is_designated_winner: bool, round_index: int) -> float:
+    base_rate = PENALTY_BASE_CONVERSION_RATE + (PENALTY_WINNER_EDGE if is_designated_winner else -PENALTY_WINNER_EDGE)
+    if round_index >= PENALTY_REGULATION_KICKS:
+        base_rate -= 0.01
+    else:
+        base_rate -= round_index * PENALTY_ROUND_SWING
+    return clamp(base_rate, 0.58, 0.9)
+
+
+def _simulate_penalty_shootout_attempt(
+    winner: str,
+    home_code: str,
+    away_code: str,
+) -> dict[str, int] | None:
+    scores = {"home": 0, "away": 0}
+    kicks_taken = {"home": 0, "away": 0}
+    sides = ("home", "away")
+    winner_side = "home" if winner == home_code else "away"
+
+    for round_index in range(PENALTY_REGULATION_KICKS):
+        for side in sides:
+            round_kick_index = kicks_taken[side]
+            conversion_rate = _penalty_conversion_rate(side == winner_side, round_kick_index)
+            scored = random.random() < conversion_rate
+            kicks_taken[side] += 1
+            if scored:
+                scores[side] += 1
+
+            other_side = "away" if side == "home" else "home"
+            remaining_side = PENALTY_REGULATION_KICKS - kicks_taken[side]
+            remaining_other = PENALTY_REGULATION_KICKS - kicks_taken[other_side]
+
+            if scores[side] > scores[other_side] + remaining_other:
+                return scores
+            if scores[other_side] > scores[side] + remaining_side:
+                return scores
+
+    if scores["home"] != scores["away"]:
+        return scores if scores[winner_side] > scores["away" if winner_side == "home" else "home"] else None
+
+    for sudden_death_round in range(PENALTY_SUDDEN_DEATH_CAP):
+        for side in sides:
+            round_kick_index = PENALTY_REGULATION_KICKS + sudden_death_round
+            conversion_rate = _penalty_conversion_rate(side == winner_side, round_kick_index)
+            scored = random.random() < conversion_rate
+            kicks_taken[side] += 1
+            if scored:
+                scores[side] += 1
+
+        if scores["home"] != scores["away"]:
+            return scores if scores[winner_side] > scores["away" if winner_side == "home" else "home"] else None
+
+    return None
+
+
 def sample_penalty_score(winner: str, home_code: str, away_code: str) -> dict[str, int]:
-    winner_score = random.choice([4, 5])
-    loser_score = random.randint(2, winner_score - 1)
+    for _ in range(24):
+        result = _simulate_penalty_shootout_attempt(winner, home_code, away_code)
+        if result is not None:
+            return result
 
     if winner == home_code:
-        return {"home": winner_score, "away": loser_score}
-    return {"home": loser_score, "away": winner_score}
+        return {"home": 6, "away": 5}
+    return {"home": 5, "away": 6}
 
 
 def match_probabilities(

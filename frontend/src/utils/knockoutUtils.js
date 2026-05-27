@@ -25,6 +25,9 @@ export function getUpsetClassification(winnerTeam, loserTeam) {
   if (!Number.isFinite(winnerRanking) || !Number.isFinite(loserRanking)) {
     return { type: "none", gap: 0, label: "" };
   }
+  if (winnerRanking <= 10) {
+    return { type: "none", gap: 0, label: "" };
+  }
 
   const gap = winnerRanking - loserRanking;
   if (gap >= MAJOR_UPSET_RANKING_GAP) {

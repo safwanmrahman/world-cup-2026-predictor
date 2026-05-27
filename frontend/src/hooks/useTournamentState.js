@@ -53,8 +53,8 @@ export function useTournamentState() {
     setActiveSimulatorTab(tabId);
   }
 
-  function switchSimulatorToRecap() {
-    switchSimulatorTab("recap");
+  function switchSimulatorToKnockout() {
+    switchSimulatorTab("knockout");
   }
 
   useEffect(() => {
@@ -213,7 +213,7 @@ export function useTournamentState() {
       const data = await response.json();
       startTransition(() => {
         setSampleTournament(data);
-        switchSimulatorToRecap();
+        switchSimulatorToKnockout();
         setSimulating(false);
       });
     } catch (caughtError) {
@@ -243,7 +243,7 @@ export function useTournamentState() {
       startTransition(() => {
         setSimulationData(data);
         setSampleTournament(data.sample_tournament);
-        switchSimulatorToRecap();
+        switchSimulatorToKnockout();
         setSimulating(false);
       });
     } catch (caughtError) {

@@ -36,8 +36,8 @@ export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleT
     setActiveManualTab(tabId);
   }
 
-  function switchManualToRecap() {
-    switchManualTab("recap");
+  function switchManualToKnockout() {
+    switchManualTab("knockout");
   }
 
   function switchManualToGroups() {
@@ -152,7 +152,7 @@ export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleT
     setManualSaved(false);
     setManualPredictionState((current) => autoFillRemainingPrediction(current, groups, fixtures, teamLookup));
     setShareStatus("Remaining picks auto-filled");
-    switchManualToRecap();
+    switchManualToKnockout();
   }
 
   function handleOpenResetConfirmation(action) {

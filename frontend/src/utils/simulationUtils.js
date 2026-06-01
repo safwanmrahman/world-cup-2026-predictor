@@ -1,6 +1,77 @@
 import { formatMatchScore } from "./formattingUtils";
 import { getUpsetClassification } from "./knockoutUtils";
 
+const RECAP_BIG_TEAM_CODES = new Set([
+  "ARG",
+  "BEL",
+  "BRA",
+  "ENG",
+  "ESP",
+  "FRA",
+  "GER",
+  "NED",
+  "POR",
+]);
+
+const RECAP_UPSET_ROUND_PRIORITY = {
+  "Round of 32": 1,
+  "Round of 16": 2,
+  Quarterfinals: 3,
+  Semifinals: 4,
+  Final: 5,
+};
+
+function buildUpsetCandidate(match, getTeam) {
+  const winner = getTeam(match.winner);
+  const loserCode = match.winner === match.home_team ? match.away_team : match.home_team;
+  const loser = getTeam(loserCode);
+  if (!winner || !loser) {
+    return null;
+  }
+
+  const upset = getUpsetClassification(winner, loser);
+  if (upset.type === "none") {
+    return null;
+  }
+
+  return {
+    match,
+    winner,
+    loser,
+    rankingSwing: upset.gap,
+    upsetType: upset.type,
+    upsetLabel: upset.label,
+  };
+}
+
+function compareFallbackUpsetCandidates(left, right) {
+  return (
+    left.rankingSwing - right.rankingSwing
+    || Number(left.upsetType === "major") - Number(right.upsetType === "major")
+  );
+}
+
+function isBigTeamMajorKnockoutElimination(candidate) {
+  return (
+    candidate?.upsetType === "major"
+    && RECAP_UPSET_ROUND_PRIORITY[candidate.match?.round] != null
+    && RECAP_BIG_TEAM_CODES.has(candidate.loser.code)
+    && !RECAP_BIG_TEAM_CODES.has(candidate.winner.code)
+  );
+}
+
+function comparePriorityUpsetCandidates(left, right) {
+  const leftRoundPriority = RECAP_UPSET_ROUND_PRIORITY[left.match.round] ?? 0;
+  const rightRoundPriority = RECAP_UPSET_ROUND_PRIORITY[right.match.round] ?? 0;
+
+  return (
+    leftRoundPriority - rightRoundPriority
+    || left.rankingSwing - right.rankingSwing
+    || (left.winner.fifa_ranking ?? -Infinity) - (right.winner.fifa_ranking ?? -Infinity)
+    || (right.loser.fifa_ranking ?? Infinity) - (left.loser.fifa_ranking ?? Infinity)
+  );
+}
+
 function formatChampionPathScore(match, championCode) {
   if (
     !match
@@ -126,29 +197,23 @@ export function deriveTournamentRecapData(tournament, thirdPlaceMatch, teams, ge
     ...(tournament.bracket?.final ?? []),
     ...(thirdPlaceMatch ? [thirdPlaceMatch] : []),
   ].filter((match) => isCompleteMatch(match) && match.winner);
-  const biggestUpset = completedKnockoutMatches.reduce((best, match) => {
-    const winner = getTeam(match.winner);
-    const loserCode = match.winner === match.home_team ? match.away_team : match.home_team;
-    const loser = getTeam(loserCode);
-    if (!winner || !loser) {
-      return best;
-    }
+  const upsetCandidates = completedKnockoutMatches
+    .map((match) => buildUpsetCandidate(match, getTeam))
+    .filter(Boolean);
+  const priorityUpsetCandidates = upsetCandidates.filter(isBigTeamMajorKnockoutElimination);
+  const biggestUpset = (priorityUpsetCandidates.length ? priorityUpsetCandidates : upsetCandidates).reduce(
+    (best, candidate) => {
+      if (!best) {
+        return candidate;
+      }
 
-    const upset = getUpsetClassification(winner, loser);
-    if (upset.type === "none") {
-      return best;
-    }
-
-    if (
-      !best
-      || upset.gap > best.rankingSwing
-      || (upset.gap === best.rankingSwing && upset.type === "major" && best.upsetType !== "major")
-    ) {
-      return { match, winner, loser, rankingSwing: upset.gap, upsetType: upset.type, upsetLabel: upset.label };
-    }
-
-    return best;
-  }, null);
+      const comparator = priorityUpsetCandidates.length
+        ? comparePriorityUpsetCandidates
+        : compareFallbackUpsetCandidates;
+      return comparator(candidate, best) > 0 ? candidate : best;
+    },
+    null,
+  );
 
   const champion = tournament.champion ? getTeam(tournament.champion) : null;
   const runnerUpCode = tournament.runner_up ?? tournament.runnerUp ?? null;

@@ -161,6 +161,18 @@ export function isCompleteMatch(match) {
   return match?.home_team && match?.away_team && match.home_goals != null && match.away_goals != null;
 }
 
+function getRoundOf16QualifiedTeamCodes(tournament) {
+  const qualifiedFromResults = tournament.round_of_16_teams ?? tournament.roundOf16Teams ?? null;
+  if (qualifiedFromResults?.length) {
+    return qualifiedFromResults;
+  }
+
+  const roundOf16Matches = tournament.bracket?.round_of_16 ?? [];
+  return roundOf16Matches
+    .flatMap((match) => [match.home_team, match.away_team])
+    .filter(Boolean);
+}
+
 export function deriveTournamentRecapData(tournament, thirdPlaceMatch, teams, getTeam) {
   if (!tournament) {
     return null;
@@ -183,17 +195,21 @@ export function deriveTournamentRecapData(tournament, thirdPlaceMatch, teams, ge
     .filter(([, goals]) => goals === topGoals && goals > 0)
     .map(([code]) => getTeam(code))
     .filter(Boolean);
+  const roundOf16QualifiedCodes = Array.from(new Set(getRoundOf16QualifiedTeamCodes(tournament)));
   const semifinalistCodes = tournament.semifinalists
     ?? tournament.bracket?.semifinals?.flatMap((match) => [match.home_team, match.away_team]).filter(Boolean)
     ?? [];
-  const bestDefensePool = semifinalistCodes.length ? semifinalistCodes : teams.map((team) => team.code);
-  const minConceded = Math.min(
-    ...bestDefensePool.map((code) => goalsAgainst[code]).filter((value) => Number.isFinite(value)),
-  );
-  const bestDefenseTeams = bestDefensePool
-    .filter((code) => goalsAgainst[code] === minConceded)
-    .map((code) => getTeam(code))
-    .filter(Boolean);
+  const bestDefensePool = roundOf16QualifiedCodes;
+  const eligibleGoalsAgainst = bestDefensePool
+    .map((code) => goalsAgainst[code])
+    .filter((value) => Number.isFinite(value));
+  const minConceded = eligibleGoalsAgainst.length ? Math.min(...eligibleGoalsAgainst) : null;
+  const bestDefenseTeams = minConceded == null
+    ? []
+    : bestDefensePool
+      .filter((code) => goalsAgainst[code] === minConceded)
+      .map((code) => getTeam(code))
+      .filter(Boolean);
   const completedKnockoutMatches = [
     ...(tournament.bracket?.round_of_32 ?? []),
     ...(tournament.bracket?.round_of_16 ?? []),

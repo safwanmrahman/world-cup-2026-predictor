@@ -340,11 +340,12 @@ export function useTournamentState() {
   const batchTopScoringTeams = sortedProbabilityRows.length
     ? sortedProbabilityRows.filter((entry) => entry.average_goals_scored === batchTopScorerGoals).map((entry) => entry.team)
     : [];
-  const batchBestDefenseGoalsAgainst = sortedProbabilityRows.length
-    ? Math.min(...sortedProbabilityRows.map((entry) => entry.average_goals_against))
+  const batchBestDefenseCandidates = sortedProbabilityRows.filter((entry) => entry.round_of_16 > 0);
+  const batchBestDefenseGoalsAgainst = batchBestDefenseCandidates.length
+    ? Math.min(...batchBestDefenseCandidates.map((entry) => entry.average_goals_against))
     : null;
-  const batchBestDefenseTeams = sortedProbabilityRows.length
-    ? sortedProbabilityRows.filter((entry) => entry.average_goals_against === batchBestDefenseGoalsAgainst).map((entry) => entry.team)
+  const batchBestDefenseTeams = batchBestDefenseCandidates.length
+    ? batchBestDefenseCandidates.filter((entry) => entry.average_goals_against === batchBestDefenseGoalsAgainst).map((entry) => entry.team)
     : [];
   const summaryBestAttackValue = sampleTopTeamGoals;
   const summaryBestAttackTeams = sampleTopScoringTeams;

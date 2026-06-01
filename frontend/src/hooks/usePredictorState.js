@@ -200,7 +200,10 @@ export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleT
       await exportBracketImage(manualBracketRef.current);
       setShareStatus("Bracket image exported");
     } catch (caughtError) {
-      setError?.(caughtError.message);
+      const exportErrorMessage = caughtError?.message
+        ? `Could not export the bracket image. Please try again. If it keeps failing, refresh the page and try once more. (${caughtError.message})`
+        : "Could not export the bracket image. Please try again. If it keeps failing, refresh the page and try once more.";
+      setError?.(exportErrorMessage);
     }
   }
 

@@ -1321,6 +1321,134 @@ table {
   overflow: hidden;
 }
 
+.bracket-export-shell.export-safe-capture {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(217, 164, 65, 0.18), transparent 34%),
+    linear-gradient(180deg, #0f1117 0%, #0f1117 100%);
+}
+
+.bracket-export-shell.export-safe-capture .manual-bracket-card {
+  background:
+    linear-gradient(180deg, rgba(23, 28, 41, 0.98), #131824);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.bracket-export-shell.export-safe-capture .world-cup-final-card {
+  border-color: rgba(217, 164, 65, 0.72);
+  background:
+    linear-gradient(135deg, rgba(217, 164, 65, 0.12), transparent 48%),
+    linear-gradient(180deg, rgba(23, 28, 41, 0.98), #131824);
+  box-shadow: 0 0 28px rgba(217, 164, 65, 0.16);
+  overflow: hidden;
+}
+
+.bracket-export-shell.export-safe-capture .champion-banner {
+  box-shadow: 0 0 52px rgba(217, 164, 65, 0.22), inset 0 0 0 1px rgba(217, 164, 65, 0.1);
+}
+
+.bracket-export-shell.export-safe-capture .bracket-connector::after,
+.bracket-export-shell.export-safe-capture .bracket-connector-out,
+.bracket-export-shell.export-safe-capture .bracket-tree-left .bracket-tree-round:not(:first-child) .bracket-connector-in,
+.bracket-export-shell.export-safe-capture .bracket-tree-right .bracket-tree-round:not(:last-child) .bracket-connector-in {
+  border-color: rgba(217, 164, 65, 0.48);
+}
+
+:root[data-theme="light"] .bracket-export-shell.export-safe-capture {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(191, 141, 34, 0.12), transparent 34%),
+    linear-gradient(180deg, #f8f9fa 0%, #f8f9fa 100%);
+}
+
+:root[data-theme="light"] .bracket-export-shell.export-safe-capture .manual-bracket-card {
+  background:
+    linear-gradient(180deg, #fefefe 0%, #f7f8fb 100%);
+  box-shadow: inset 0 0 0 1px rgba(17, 26, 40, 0.02);
+}
+
+:root[data-theme="light"] .bracket-export-shell.export-safe-capture .world-cup-final-card {
+  border-color: rgba(191, 141, 34, 0.56);
+  background:
+    linear-gradient(135deg, rgba(191, 141, 34, 0.12), transparent 48%),
+    linear-gradient(180deg, #fefefe 0%, #f7f8fb 100%);
+  box-shadow: 0 0 28px rgba(191, 141, 34, 0.12);
+  overflow: hidden;
+}
+
+:root[data-theme="light"] .bracket-export-shell.export-safe-capture .champion-banner {
+  box-shadow: 0 0 52px rgba(191, 141, 34, 0.14), inset 0 0 0 1px rgba(191, 141, 34, 0.08);
+}
+
+:root[data-theme="light"] .bracket-export-shell.export-safe-capture .bracket-connector::after,
+:root[data-theme="light"] .bracket-export-shell.export-safe-capture .bracket-connector-out,
+:root[data-theme="light"] .bracket-export-shell.export-safe-capture .bracket-tree-left .bracket-tree-round:not(:first-child) .bracket-connector-in,
+:root[data-theme="light"] .bracket-export-shell.export-safe-capture .bracket-tree-right .bracket-tree-round:not(:last-child) .bracket-connector-in {
+  border-color: rgba(126, 96, 36, 0.42);
+}
+
+.bracket-export-shell.export-safe-capture .manual-bracket-head,
+.bracket-export-shell.export-safe-capture .manual-inline-advance-picker,
+.bracket-export-shell.export-safe-capture .manual-bracket-actions,
+.bracket-export-shell.export-safe-capture .manual-result-placeholder,
+.bracket-export-shell.export-safe-capture .manual-bracket-badges,
+.bracket-export-shell.export-safe-capture .manual-details-trigger {
+  display: none !important;
+}
+
+.bracket-export-shell.export-safe-capture .manual-bracket-card {
+  gap: 10px;
+  padding: 11px 10px 10px;
+}
+
+.bracket-export-shell.export-safe-capture .manual-bracket-foot {
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.bracket-export-shell.export-safe-capture .manual-bracket-summary {
+  gap: 4px 10px;
+}
+
+.bracket-export-shell.export-safe-capture .manual-result-note {
+  font-size: 0.76rem;
+}
+
+.bracket-export-shell.export-safe-capture .manual-bracket-pens-note {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
+.bracket-export-shell.export-safe-capture .manual-bracket-card .bracket-team-row {
+  cursor: default;
+  gap: 4px;
+  padding: 8px 8px 8px 10px;
+}
+
+.bracket-export-shell.export-safe-capture .bracket-score-trigger {
+  pointer-events: none;
+}
+
+.bracket-export-shell.export-safe-capture .manual-bracket-card .bracket-team-meta {
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.bracket-export-shell.export-safe-capture .manual-bracket-card .bracket-team-meta span {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.14;
+  font-size: clamp(0.84rem, 0.74vw, 1rem);
+}
+
+.bracket-export-shell.export-safe-capture .manual-bracket-card .bracket-score-trigger,
+.bracket-export-shell.export-safe-capture .manual-bracket-card .bracket-team-row strong {
+  flex: 0 0 auto;
+  min-width: 18px;
+  text-align: right;
+}
+
 .bracketology-grid {
   --bracket-gap-line: clamp(10px, 0.9vw, 18px);
   display: grid;

@@ -346,12 +346,12 @@ export function useTournamentState() {
   const batchBestDefenseTeams = sortedProbabilityRows.length
     ? sortedProbabilityRows.filter((entry) => entry.average_goals_against === batchBestDefenseGoalsAgainst).map((entry) => entry.team)
     : [];
-  const summaryBestAttackValue = hasBatchSimulationResults ? batchTopScorerGoals : sampleTopTeamGoals;
-  const summaryBestAttackTeams = hasBatchSimulationResults ? batchTopScoringTeams : sampleTopScoringTeams;
-  const summaryBestAttackMode = hasBatchSimulationResults ? "average" : "total";
-  const summaryBestDefenseValue = hasBatchSimulationResults ? batchBestDefenseGoalsAgainst : sampleBestDefenseGoalsAgainst;
-  const summaryBestDefenseTeams = hasBatchSimulationResults ? batchBestDefenseTeams : sampleBestDefenseTeams;
-  const summaryBestDefenseMode = hasBatchSimulationResults ? "average" : "total";
+  const summaryBestAttackValue = sampleTopTeamGoals;
+  const summaryBestAttackTeams = sampleTopScoringTeams;
+  const summaryBestAttackMode = "total";
+  const summaryBestDefenseValue = sampleBestDefenseGoalsAgainst;
+  const summaryBestDefenseTeams = sampleBestDefenseTeams;
+  const summaryBestDefenseMode = "total";
   const normalizedSimulationCount = Math.min(10000, Math.max(1, Number(simulationCount) || DEFAULT_CUSTOM_SIMULATION_COUNT));
   const homeTeam = getTeam(predictionForm.home_team_code);
   const awayTeam = getTeam(predictionForm.away_team_code);
@@ -413,6 +413,8 @@ export function useTournamentState() {
     batchMostWinsCount,
     batchTopScorerGoals,
     batchTopScoringTeams,
+    batchBestDefenseGoalsAgainst,
+    batchBestDefenseTeams,
     summaryBestAttackValue,
     summaryBestAttackTeams,
     summaryBestAttackMode,

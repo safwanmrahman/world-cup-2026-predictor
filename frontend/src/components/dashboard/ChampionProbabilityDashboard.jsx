@@ -13,6 +13,8 @@ export default function ChampionProbabilityDashboard({
   batchMostWinsCount,
   batchTopScoringTeams,
   batchTopScorerGoals,
+  batchBestDefenseTeams,
+  batchBestDefenseGoalsAgainst,
 }) {
   return (
     <section className="surface-card dashboard-panel">
@@ -41,9 +43,21 @@ export default function ChampionProbabilityDashboard({
           ) : null}
           {hasBatchSimulationResults && batchTopScoringTeams?.length ? (
             <span className="dashboard-head-chip">
-              <strong>Batch Top Scorer</strong>
+              <strong>Batch Best Attack</strong>
               <span>{formatDecimal(batchTopScorerGoals)}</span>
               {batchTopScoringTeams.map((team) => (
+                <span className="dashboard-head-chip-team" key={team.code}>
+                  <TeamFlag code={team.code} size="sm" alt={`${team.name} flag`} />
+                  {team.name}
+                </span>
+              ))}
+            </span>
+          ) : null}
+          {hasBatchSimulationResults && batchBestDefenseTeams?.length ? (
+            <span className="dashboard-head-chip">
+              <strong>Batch Best Defense</strong>
+              <span>{formatDecimal(batchBestDefenseGoalsAgainst)}</span>
+              {batchBestDefenseTeams.map((team) => (
                 <span className="dashboard-head-chip-team" key={team.code}>
                   <TeamFlag code={team.code} size="sm" alt={`${team.name} flag`} />
                   {team.name}

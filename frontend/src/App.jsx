@@ -62,6 +62,8 @@ function App() {
     batchMostWinsCount: tournament.batchMostWinsCount,
     batchTopScorerGoals: tournament.batchTopScorerGoals,
     batchTopScoringTeams: tournament.batchTopScoringTeams,
+    batchBestDefenseGoalsAgainst: tournament.batchBestDefenseGoalsAgainst,
+    batchBestDefenseTeams: tournament.batchBestDefenseTeams,
     summaryBestAttackValue: tournament.summaryBestAttackValue,
     summaryBestAttackTeams: tournament.summaryBestAttackTeams,
     summaryBestAttackMode: tournament.summaryBestAttackMode,

@@ -21,6 +21,8 @@ export default function SimulatorModeView(props) {
     batchMostWinsCount,
     batchTopScorerGoals,
     batchTopScoringTeams,
+    batchBestDefenseGoalsAgainst,
+    batchBestDefenseTeams,
     hasBatchSimulationResults,
     summaryBestAttackValue,
     summaryBestAttackTeams,
@@ -77,6 +79,8 @@ export default function SimulatorModeView(props) {
           batchMostWinsCount={batchMostWinsCount}
           batchTopScoringTeams={batchTopScoringTeams}
           batchTopScorerGoals={batchTopScorerGoals}
+          batchBestDefenseGoalsAgainst={batchBestDefenseGoalsAgainst}
+          batchBestDefenseTeams={batchBestDefenseTeams}
         />
       </main>
 

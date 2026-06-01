@@ -49,7 +49,7 @@ export function useTournamentState() {
   const [predicting, setPredicting] = useState(false);
   const [error, setError] = useState("");
 
-  const activeBracketHighlightTeamCode = pinnedBracketTeamCode ?? hoveredBracketTeamCode;
+  const activeBracketHighlightTeamCode = hoveredBracketTeamCode ?? pinnedBracketTeamCode;
 
   function switchSimulatorTab(tabId) {
     setActiveSimulatorTab(tabId);
@@ -245,15 +245,11 @@ export function useTournamentState() {
   }
 
   function handleBracketTeamHover(teamCode) {
-    if (!pinnedBracketTeamCode) {
-      setHoveredBracketTeamCode(teamCode);
-    }
+    setHoveredBracketTeamCode(teamCode);
   }
 
   function handleBracketTeamLeave() {
-    if (!pinnedBracketTeamCode) {
-      setHoveredBracketTeamCode(null);
-    }
+    setHoveredBracketTeamCode(null);
   }
 
   function handleBracketTeamPin(teamCode) {
@@ -393,6 +389,8 @@ export function useTournamentState() {
     activeSimulatorTab,
     setActiveSimulatorTab: switchSimulatorTab,
     activeBracketHighlightTeamCode,
+    hoveredBracketTeamCode,
+    pinnedBracketTeamCode,
     displayedGroups,
     qualifiedGroupCodes,
     probabilityRows,

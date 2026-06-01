@@ -25,6 +25,8 @@ export function KnockoutMatchCard({
   className = "",
   onOpenDetails,
   highlightedTeamCode = null,
+  hoveredTeamCode = null,
+  pinnedTeamCode = null,
   onTeamHover,
   onTeamLeave,
   onTeamPin,
@@ -37,13 +39,19 @@ export function KnockoutMatchCard({
   const away = getTeam(match.away_team);
   const winnerCode = getKnockoutWinnerCode(match);
   const isRouteHighlighted = highlightedTeamCode && [match.home_team, match.away_team].includes(highlightedTeamCode);
+  const isHoveredRoute = hoveredTeamCode && [match.home_team, match.away_team].includes(hoveredTeamCode);
+  const isPinnedRoute = pinnedTeamCode && [match.home_team, match.away_team].includes(pinnedTeamCode);
+  const homeHovered = hoveredTeamCode === match.home_team;
+  const awayHovered = hoveredTeamCode === match.away_team;
+  const homePinned = pinnedTeamCode === match.home_team;
+  const awayPinned = pinnedTeamCode === match.away_team;
   const penaltyScore = match.decision === "penalties" && match.penalties
     ? `Pens ${match.penalties.home}-${match.penalties.away}`
     : null;
 
   return (
     <div
-      className={`bracket-match-card knockout-card-shell ${isRouteHighlighted ? "route-highlighted" : ""} ${className}`.trim()}
+      className={`bracket-match-card knockout-card-shell ${isRouteHighlighted && !isPinnedRoute ? "route-highlighted" : ""} ${isHoveredRoute ? "route-hovered" : ""} ${isPinnedRoute ? "route-selected" : ""} ${className}`.trim()}
       onClick={() => onOpenDetails?.(match)}
       onMouseLeave={() => onTeamLeave?.()}
       onKeyDown={(event) => {
@@ -56,7 +64,7 @@ export function KnockoutMatchCard({
       role={onOpenDetails ? "button" : undefined}
     >
       <div
-        className={`bracket-team-row ${winnerCode === match.home_team ? "winner" : ""} ${highlightedTeamCode === match.home_team ? "route-team-highlighted" : ""}`}
+        className={`bracket-team-row ${winnerCode === match.home_team ? "winner" : ""} ${highlightedTeamCode === match.home_team && !homePinned ? "route-team-highlighted" : ""} ${homeHovered ? "route-team-hovered" : ""} ${homePinned ? "route-team-selected" : ""}`}
         onMouseEnter={() => onTeamHover?.(match.home_team)}
         onClickCapture={() => onTeamPin?.(match.home_team)}
       >
@@ -67,7 +75,7 @@ export function KnockoutMatchCard({
         {"home_goals" in match ? <strong>{match.home_goals}</strong> : <span className="score-empty">-</span>}
       </div>
       <div
-        className={`bracket-team-row ${winnerCode === match.away_team ? "winner" : ""} ${highlightedTeamCode === match.away_team ? "route-team-highlighted" : ""}`}
+        className={`bracket-team-row ${winnerCode === match.away_team ? "winner" : ""} ${highlightedTeamCode === match.away_team && !awayPinned ? "route-team-highlighted" : ""} ${awayHovered ? "route-team-hovered" : ""} ${awayPinned ? "route-team-selected" : ""}`}
         onMouseEnter={() => onTeamHover?.(match.away_team)}
         onClickCapture={() => onTeamPin?.(match.away_team)}
       >
@@ -100,6 +108,8 @@ export function ManualKnockoutMatchCard({
   onMatchChange,
   onQuickPick,
   highlightedTeamCode = null,
+  hoveredTeamCode = null,
+  pinnedTeamCode = null,
   onTeamHover,
   onTeamLeave,
   onTeamPin,
@@ -119,6 +129,12 @@ export function ManualKnockoutMatchCard({
   const statusLabels = getManualKnockoutCardBadges(match);
   const winnerCode = getKnockoutWinnerCode(match);
   const isRouteHighlighted = highlightedTeamCode && [match.home_team, match.away_team].includes(highlightedTeamCode);
+  const isHoveredRoute = hoveredTeamCode && [match.home_team, match.away_team].includes(hoveredTeamCode);
+  const isPinnedRoute = pinnedTeamCode && [match.home_team, match.away_team].includes(pinnedTeamCode);
+  const homeHovered = hoveredTeamCode === match.home_team;
+  const awayHovered = hoveredTeamCode === match.away_team;
+  const homePinned = pinnedTeamCode === match.home_team;
+  const awayPinned = pinnedTeamCode === match.away_team;
   const matchScore = formatMatchScore(match);
   const penaltyNote = match.result_type === "PENS" && match.penalties
     ? `Pens ${match.penalties.home}-${match.penalties.away}`
@@ -174,7 +190,7 @@ export function ManualKnockoutMatchCard({
 
   return (
     <div
-      className={`bracket-match-card manual-bracket-card knockout-card-shell ${isRouteHighlighted ? "route-highlighted" : ""} ${match.className ?? ""}`.trim()}
+      className={`bracket-match-card manual-bracket-card knockout-card-shell ${isRouteHighlighted && !isPinnedRoute ? "route-highlighted" : ""} ${isHoveredRoute ? "route-hovered" : ""} ${isPinnedRoute ? "route-selected" : ""} ${match.className ?? ""}`.trim()}
       onMouseLeave={() => onTeamLeave?.()}
     >
       <div className="manual-bracket-head">
@@ -195,7 +211,7 @@ export function ManualKnockoutMatchCard({
         </Button>
       </div>
       <div
-        className={`bracket-team-row ${winnerCode === match.home_team ? "winner" : ""} ${highlightedTeamCode === match.home_team ? "route-team-highlighted" : ""}`}
+        className={`bracket-team-row ${winnerCode === match.home_team ? "winner" : ""} ${highlightedTeamCode === match.home_team && !homePinned ? "route-team-highlighted" : ""} ${homeHovered ? "route-team-hovered" : ""} ${homePinned ? "route-team-selected" : ""}`}
         onMouseEnter={() => onTeamHover?.(match.home_team)}
         onClick={() => {
           onTeamPin?.(match.home_team);
@@ -219,7 +235,7 @@ export function ManualKnockoutMatchCard({
         {renderEditableScore("home")}
       </div>
       <div
-        className={`bracket-team-row ${winnerCode === match.away_team ? "winner" : ""} ${highlightedTeamCode === match.away_team ? "route-team-highlighted" : ""}`}
+        className={`bracket-team-row ${winnerCode === match.away_team ? "winner" : ""} ${highlightedTeamCode === match.away_team && !awayPinned ? "route-team-highlighted" : ""} ${awayHovered ? "route-team-hovered" : ""} ${awayPinned ? "route-team-selected" : ""}`}
         onMouseEnter={() => onTeamHover?.(match.away_team)}
         onClick={() => {
           onTeamPin?.(match.away_team);

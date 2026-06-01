@@ -41,6 +41,8 @@ export default function SimulatorModeView(props) {
     handleGroupCardKeydown,
     thirdPlaceMatch,
     activeBracketHighlightTeamCode,
+    hoveredBracketTeamCode,
+    pinnedBracketTeamCode,
     handleBracketTeamHover,
     handleBracketTeamLeave,
     handleBracketTeamPin,
@@ -111,6 +113,8 @@ export default function SimulatorModeView(props) {
               getTeam={getTeam}
               onOpenDetails={(match) => handleOpenKnockoutDetails(match, "simulator")}
               highlightedTeamCode={activeBracketHighlightTeamCode}
+              hoveredTeamCode={hoveredBracketTeamCode}
+              pinnedTeamCode={pinnedBracketTeamCode}
               onTeamHover={handleBracketTeamHover}
               onTeamLeave={handleBracketTeamLeave}
               onTeamPin={handleBracketTeamPin}

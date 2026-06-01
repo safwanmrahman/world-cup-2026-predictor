@@ -1637,15 +1637,22 @@ table {
 
 .knockout-card-shell {
   cursor: pointer;
-  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 
-.knockout-card-shell:hover,
+.knockout-card-shell:hover {
+  transform: translateY(-1px);
+  border-color: rgba(217, 164, 65, 0.42);
+  box-shadow: inset 0 0 0 1px rgba(217, 164, 65, 0.12), 0 12px 24px rgba(0, 0, 0, 0.08);
+  outline: none;
+}
+
 .knockout-card-shell:focus-visible {
   transform: translateY(-1px);
   border-color: var(--border-strong);
-  box-shadow: inset 0 0 0 1px var(--glow-soft), 0 12px 24px rgba(0, 0, 0, 0.08);
-  outline: none;
+  box-shadow: inset 0 0 0 1px rgba(120, 138, 167, 0.12), 0 12px 24px rgba(0, 0, 0, 0.08);
+  outline: 2px solid rgba(120, 138, 167, 0.28);
+  outline-offset: 2px;
 }
 
 .bracket-match-card.route-highlighted {
@@ -1654,6 +1661,23 @@ table {
     inset 0 0 0 1px rgba(217, 164, 65, 0.18),
     0 0 0 1px rgba(217, 164, 65, 0.14),
     0 16px 30px rgba(217, 164, 65, 0.16);
+}
+
+.bracket-match-card.route-selected {
+  border-color: rgba(217, 164, 65, 0.28);
+  box-shadow:
+    inset 0 0 0 1px rgba(217, 164, 65, 0.08),
+    0 10px 22px rgba(0, 0, 0, 0.06);
+}
+
+.bracket-match-card.route-hovered,
+.bracket-match-card.route-selected:hover,
+.bracket-match-card.route-selected:focus-visible {
+  border-color: rgba(217, 164, 65, 0.62);
+  box-shadow:
+    inset 0 0 0 1px rgba(217, 164, 65, 0.18),
+    0 0 0 1px rgba(217, 164, 65, 0.14),
+    0 16px 30px rgba(217, 164, 65, 0.18);
 }
 
 .world-cup-final-card {
@@ -1762,6 +1786,25 @@ table {
   border-left-color: var(--accent-primary);
   background: rgba(217, 164, 65, 0.12);
   box-shadow: inset 0 0 0 1px rgba(217, 164, 65, 0.08);
+}
+
+.bracket-team-row.route-team-selected {
+  border-left-color: rgba(217, 164, 65, 0.46);
+  background: rgba(217, 164, 65, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(217, 164, 65, 0.04);
+}
+
+.bracket-team-row.route-team-hovered,
+.bracket-team-row.route-team-selected:hover,
+.bracket-team-row.route-team-highlighted:hover {
+  border-left-color: var(--accent-primary);
+  background: rgba(217, 164, 65, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(217, 164, 65, 0.1);
+}
+
+.bracket-team-row[role="button"]:focus-visible {
+  outline: 2px solid rgba(120, 138, 167, 0.28);
+  outline-offset: -2px;
 }
 
 .bracket-team-meta {

@@ -12,6 +12,8 @@ function KnockoutRound({
   renderMatch,
   onOpenDetails,
   highlightedTeamCode,
+  hoveredTeamCode,
+  pinnedTeamCode,
   onTeamHover,
   onTeamLeave,
   onTeamPin,
@@ -68,6 +70,8 @@ function KnockoutRound({
                       getTeam={getTeam}
                       onOpenDetails={onOpenDetails}
                       highlightedTeamCode={highlightedTeamCode}
+                      hoveredTeamCode={hoveredTeamCode}
+                      pinnedTeamCode={pinnedTeamCode}
                       onTeamHover={onTeamHover}
                       onTeamLeave={onTeamLeave}
                       onTeamPin={onTeamPin}
@@ -91,6 +95,8 @@ export default function KnockoutBracket({
   bracketRef,
   onOpenDetails,
   highlightedTeamCode = null,
+  hoveredTeamCode = null,
+  pinnedTeamCode = null,
   onTeamHover,
   onTeamLeave,
   onTeamPin,
@@ -117,6 +123,8 @@ export default function KnockoutBracket({
           renderMatch={renderMatch}
           onOpenDetails={onOpenDetails}
           highlightedTeamCode={highlightedTeamCode}
+          hoveredTeamCode={hoveredTeamCode}
+          pinnedTeamCode={pinnedTeamCode}
           onTeamHover={onTeamHover}
           onTeamLeave={onTeamLeave}
           onTeamPin={onTeamPin}
@@ -144,7 +152,7 @@ export default function KnockoutBracket({
                         {renderMatch({ ...match, className: "world-cup-final-card" })}
                       </div>
                     )
-                    : <KnockoutMatchCard key={match.match_id} match={match} getTeam={getTeam} className="world-cup-final-card" onOpenDetails={onOpenDetails} highlightedTeamCode={highlightedTeamCode} onTeamHover={onTeamHover} onTeamLeave={onTeamLeave} onTeamPin={onTeamPin} />
+                    : <KnockoutMatchCard key={match.match_id} match={match} getTeam={getTeam} className="world-cup-final-card" onOpenDetails={onOpenDetails} highlightedTeamCode={highlightedTeamCode} hoveredTeamCode={hoveredTeamCode} pinnedTeamCode={pinnedTeamCode} onTeamHover={onTeamHover} onTeamLeave={onTeamLeave} onTeamPin={onTeamPin} />
                 ))}
               </div>
             </div>
@@ -154,7 +162,7 @@ export default function KnockoutBracket({
                 {thirdPlaceMatch ? (
                   renderMatch
                     ? renderMatch(thirdPlaceMatch)
-                    : <KnockoutMatchCard match={thirdPlaceMatch} getTeam={getTeam} onOpenDetails={onOpenDetails} highlightedTeamCode={highlightedTeamCode} onTeamHover={onTeamHover} onTeamLeave={onTeamLeave} onTeamPin={onTeamPin} />
+                    : <KnockoutMatchCard match={thirdPlaceMatch} getTeam={getTeam} onOpenDetails={onOpenDetails} highlightedTeamCode={highlightedTeamCode} hoveredTeamCode={hoveredTeamCode} pinnedTeamCode={pinnedTeamCode} onTeamHover={onTeamHover} onTeamLeave={onTeamLeave} onTeamPin={onTeamPin} />
                 ) : (
                   <div className="bracket-placeholder">Awaiting semifinal results</div>
                 )}
@@ -171,6 +179,8 @@ export default function KnockoutBracket({
           renderMatch={renderMatch}
           onOpenDetails={onOpenDetails}
           highlightedTeamCode={highlightedTeamCode}
+          hoveredTeamCode={hoveredTeamCode}
+          pinnedTeamCode={pinnedTeamCode}
           onTeamHover={onTeamHover}
           onTeamLeave={onTeamLeave}
           onTeamPin={onTeamPin}

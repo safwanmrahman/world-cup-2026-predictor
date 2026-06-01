@@ -19,6 +19,8 @@ export default function PredictorModeView(props) {
     openManualGroupEditor,
     thirdPlaceDescription,
     activeBracketHighlightTeamCode,
+    hoveredBracketTeamCode,
+    pinnedBracketTeamCode,
     handleBracketTeamHover,
     handleBracketTeamLeave,
     handleBracketTeamPin,
@@ -91,6 +93,8 @@ export default function PredictorModeView(props) {
               bracketRef={manualBracketRef}
               onOpenDetails={(match) => handleOpenKnockoutDetails(match, "manual")}
               highlightedTeamCode={activeBracketHighlightTeamCode}
+              hoveredTeamCode={hoveredBracketTeamCode}
+              pinnedTeamCode={pinnedBracketTeamCode}
               onTeamHover={handleBracketTeamHover}
               onTeamLeave={handleBracketTeamLeave}
               onTeamPin={handleBracketTeamPin}
@@ -102,6 +106,8 @@ export default function PredictorModeView(props) {
                   onMatchChange={handleKnockoutMatchChange}
                   onQuickPick={handleKnockoutQuickPick}
                   highlightedTeamCode={activeBracketHighlightTeamCode}
+                  hoveredTeamCode={hoveredBracketTeamCode}
+                  pinnedTeamCode={pinnedBracketTeamCode}
                   onTeamHover={handleBracketTeamHover}
                   onTeamLeave={handleBracketTeamLeave}
                   onTeamPin={handleBracketTeamPin}

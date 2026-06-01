@@ -1,3 +1,5 @@
+import { getKnockoutWinnerCode } from "./knockoutUtils";
+
 export function waitForNextPaint() {
   return new Promise((resolve) => {
     window.requestAnimationFrame(() => resolve());
@@ -28,7 +30,13 @@ export function formatMatchScore(match) {
   }
 
   const baseScore = `${match.home_goals} - ${match.away_goals}`;
-  if (match.decision === "penalties" && match.penalties) {
+  const decidedOnPenalties =
+    match.home_goals === match.away_goals
+    && match.penalties
+    && match.penalties.home != null
+    && match.penalties.away != null
+    && match.penalties.home !== match.penalties.away;
+  if (decidedOnPenalties || (match.decision === "penalties" && match.penalties)) {
     return `${baseScore} (${match.penalties.home}-${match.penalties.away} pens)`;
   }
 
@@ -48,9 +56,12 @@ export function getPredictionAdvancingTeam(prediction) {
     return null;
   }
 
-  return prediction.sample_score.winner === prediction.home_team.code
+  const winnerCode = getKnockoutWinnerCode(prediction.sample_score);
+  return winnerCode === prediction.home_team.code
     ? prediction.home_team
-    : prediction.away_team;
+    : winnerCode === prediction.away_team.code
+      ? prediction.away_team
+      : null;
 }
 
 export function getPredictionSampleWinnerCode(prediction) {
@@ -58,17 +69,5 @@ export function getPredictionSampleWinnerCode(prediction) {
     return null;
   }
 
-  if (prediction.sample_score.winner) {
-    return prediction.sample_score.winner;
-  }
-
-  if (prediction.sample_score.home_goals > prediction.sample_score.away_goals) {
-    return prediction.home_team.code;
-  }
-
-  if (prediction.sample_score.away_goals > prediction.sample_score.home_goals) {
-    return prediction.away_team.code;
-  }
-
-  return null;
+  return getKnockoutWinnerCode(prediction.sample_score);
 }

@@ -6,6 +6,7 @@ import {
   getKnockoutResultIndicators,
   getKnockoutUpset,
   getKnockoutMatchOpponent,
+  getKnockoutWinnerCode,
   getLowerRatedTeamCode,
   getTeamPreviousKnockoutMatch,
 } from "../../utils/knockoutUtils";
@@ -90,13 +91,14 @@ export default function KnockoutMatchDetailsModal({
 
   const homeTeam = getTeam(match.home_team);
   const awayTeam = getTeam(match.away_team);
-  const winner = match.winner ? getTeam(match.winner) : null;
+  const winnerCode = getKnockoutWinnerCode(match);
+  const winner = winnerCode ? getTeam(winnerCode) : null;
   const upset = getKnockoutUpset(match, getTeam);
   const resultIndicators = getKnockoutResultIndicators(match, getTeam);
   const lowerRatedCode = getLowerRatedTeamCode(homeTeam, awayTeam);
   const lowerRatedTeam = lowerRatedCode ? getTeam(lowerRatedCode) : null;
   const favoriteTeam = lowerRatedCode === homeTeam?.code ? awayTeam : lowerRatedCode === awayTeam?.code ? homeTeam : null;
-  const currentPickLabel = match.winner ? `${winner?.name ?? match.winner} selected` : "Awaiting pick";
+  const currentPickLabel = winnerCode ? `${winner?.name ?? winnerCode} selected` : "Awaiting pick";
   const homePrevious = getTeamPreviousKnockoutMatch(matchPool ?? [], match.round, match.home_team);
   const awayPrevious = getTeamPreviousKnockoutMatch(matchPool ?? [], match.round, match.away_team);
   const homePreviousOpponent = homePrevious ? getTeam(getKnockoutMatchOpponent(homePrevious, match.home_team)) : null;
@@ -128,7 +130,7 @@ export default function KnockoutMatchDetailsModal({
       <div className="knockout-modal-divider" />
       <div className="modal-section knockout-modal-body">
         <div className="knockout-modal-scoreboard">
-          <div className={`knockout-modal-team ${match.winner === match.home_team ? "winner" : ""} ${match.winner && match.winner !== match.home_team ? "loser" : ""}`}>
+          <div className={`knockout-modal-team ${winnerCode === match.home_team ? "winner" : ""} ${winnerCode && winnerCode !== match.home_team ? "loser" : ""}`}>
             <TeamFlag code={homeTeam?.code ?? match.home_team} size="lg" alt={`${homeTeam?.name ?? match.home_team} flag`} />
             <strong>{homeTeam?.name ?? match.home_team}</strong>
             <span>{homeTeam?.code ?? match.home_team}</span>
@@ -142,7 +144,7 @@ export default function KnockoutMatchDetailsModal({
             {winner ? <div className="knockout-modal-winner-banner">{winner.name} advance</div> : null}
             {match.penalties ? <div className="knockout-modal-note knockout-modal-note-pens">Decided on penalties: {match.penalties.home}-{match.penalties.away}</div> : null}
           </div>
-          <div className={`knockout-modal-team ${match.winner === match.away_team ? "winner" : ""} ${match.winner && match.winner !== match.away_team ? "loser" : ""}`}>
+          <div className={`knockout-modal-team ${winnerCode === match.away_team ? "winner" : ""} ${winnerCode && winnerCode !== match.away_team ? "loser" : ""}`}>
             <TeamFlag code={awayTeam?.code ?? match.away_team} size="lg" alt={`${awayTeam?.name ?? match.away_team} flag`} />
             <strong>{awayTeam?.name ?? match.away_team}</strong>
             <span>{awayTeam?.code ?? match.away_team}</span>
@@ -214,8 +216,8 @@ export default function KnockoutMatchDetailsModal({
                   {manualStatusLabels.length ? manualStatusLabels.map((badge) => <Badge key={`${match.match_id}-${badge.label}`} label={badge.label} tone={badge.tone} />) : <Badge label="Awaiting Pick" tone="muted" />}
                 </div>
                 <div className="knockout-modal-actions">
-                  <Button className={match.winner === match.home_team ? "button-primary" : "button-secondary"} onClick={() => onPickWinner?.(match, "teamA")}>Pick {homeTeam?.name ?? "Team A"}</Button>
-                  <Button className={match.winner === match.away_team ? "button-primary" : "button-secondary"} onClick={() => onPickWinner?.(match, "teamB")}>Pick {awayTeam?.name ?? "Team B"}</Button>
+                  <Button className={winnerCode === match.home_team ? "button-primary" : "button-secondary"} onClick={() => onPickWinner?.(match, "teamA")}>Pick {homeTeam?.name ?? "Team A"}</Button>
+                  <Button className={winnerCode === match.away_team ? "button-primary" : "button-secondary"} onClick={() => onPickWinner?.(match, "teamB")}>Pick {awayTeam?.name ?? "Team B"}</Button>
                 </div>
                 <div className="knockout-editor-score-grid">
                   <label className="manual-mini-field"><span>{homeTeam?.name ?? match.home_team}</span><ManualScoreInput value={match.home_goals ?? ""} onChange={(value) => onMatchChange?.(match, { homeGoals: value })} /></label>

@@ -1,5 +1,6 @@
 import { LEFT_BRACKET_TREE, RIGHT_BRACKET_TREE } from "../../manualPrediction";
 import { TROPHY_PNG_URL } from "../../data/constants";
+import { getKnockoutWinnerCode } from "../../utils/knockoutUtils";
 import TeamFlag from "../shared/TeamFlag";
 import { KnockoutMatchCard } from "./KnockoutMatchCard";
 
@@ -102,7 +103,8 @@ export default function KnockoutBracket({
   ];
   const matchesById = Object.fromEntries(allMatches.map((match) => [match.match_id, match]));
   const finalMatch = bracket.final?.[0];
-  const champion = finalMatch?.winner ? getTeam(finalMatch.winner) : null;
+  const championCode = getKnockoutWinnerCode(finalMatch);
+  const champion = championCode ? getTeam(championCode) : null;
 
   return (
     <div className="bracket-export-shell" ref={bracketRef}>

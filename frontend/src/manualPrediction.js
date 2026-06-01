@@ -1,3 +1,9 @@
+import {
+  deriveKnockoutWinnerCode,
+  getKnockoutLoserCode,
+  getKnockoutWinnerCode,
+} from "./utils/knockoutUtils";
+
 export const MANUAL_PREDICTION_STORAGE_KEY = "wc26-manual-prediction";
 export const MANUAL_SHARE_PREFIX = "#prediction=";
 
@@ -770,27 +776,15 @@ function createBaseMatch(template, placements, slotAssignments) {
 }
 
 function deriveKnockoutWinner(homeCode, awayCode, homeGoals, awayGoals, penaltiesHome, penaltiesAway, explicitWinner) {
-  if (!homeCode || !awayCode || homeGoals == null || awayGoals == null) {
-    return null;
-  }
-
-  if (homeGoals > awayGoals) {
-    return homeCode;
-  }
-
-  if (awayGoals > homeGoals) {
-    return awayCode;
-  }
-
-  if (penaltiesHome != null && penaltiesAway != null && penaltiesHome !== penaltiesAway) {
-    return penaltiesHome > penaltiesAway ? homeCode : awayCode;
-  }
-
-  if (explicitWinner === homeCode || explicitWinner === awayCode) {
-    return explicitWinner;
-  }
-
-  return null;
+  return deriveKnockoutWinnerCode(
+    homeCode,
+    awayCode,
+    homeGoals,
+    awayGoals,
+    penaltiesHome,
+    penaltiesAway,
+    explicitWinner,
+  );
 }
 
 function hydrateMatchState(baseMatch, savedMatch = {}) {
@@ -888,12 +882,7 @@ function buildFollowUpMatches(roundKey, winnersByMatch, savedMatches) {
 
 function losersFromSemifinals(semifinals) {
   return semifinals
-    .map((match) => {
-      if (!match.winner || !match.home_team || !match.away_team) {
-        return null;
-      }
-      return match.winner === match.home_team ? match.away_team : match.home_team;
-    })
+    .map((match) => getKnockoutLoserCode(match))
     .filter(Boolean);
 }
 
@@ -934,12 +923,9 @@ export function buildManualTournament(state, groups, fixtures, teamsByCode) {
   };
   const thirdPlaceMatch = hydrateMatchState(thirdPlaceBase, state.knockoutMatches["3P"]);
   const finalMatch = final[0] ?? null;
-  const runnerUp =
-    finalMatch?.winner && finalMatch.home_team && finalMatch.away_team
-      ? finalMatch.winner === finalMatch.home_team
-        ? finalMatch.away_team
-        : finalMatch.home_team
-      : null;
+  const championCode = getKnockoutWinnerCode(finalMatch);
+  const runnerUp = getKnockoutLoserCode(finalMatch);
+  const thirdPlaceCode = getKnockoutWinnerCode(thirdPlaceMatch);
   const groupAdvancers = Object.fromEntries(
     groupResults.map((group) => [
       group.name,
@@ -977,9 +963,9 @@ export function buildManualTournament(state, groups, fixtures, teamsByCode) {
       final,
     },
     thirdPlaceMatch,
-    champion: finalMatch?.winner ?? null,
+    champion: championCode,
     runnerUp,
-    thirdPlace: thirdPlaceMatch?.winner ?? null,
+    thirdPlace: thirdPlaceCode,
     semifinalists: semifinals
       .map((match) => [match.home_team, match.away_team])
       .flat()

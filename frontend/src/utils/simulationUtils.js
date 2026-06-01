@@ -1,5 +1,9 @@
 import { formatMatchScore } from "./formattingUtils";
-import { getUpsetClassification } from "./knockoutUtils";
+import {
+  getKnockoutLoserCode,
+  getKnockoutWinnerCode,
+  getUpsetClassification,
+} from "./knockoutUtils";
 
 const RECAP_BIG_TEAM_CODES = new Set([
   "ARG",
@@ -22,8 +26,9 @@ const RECAP_UPSET_ROUND_PRIORITY = {
 };
 
 function buildUpsetCandidate(match, getTeam) {
-  const winner = getTeam(match.winner);
-  const loserCode = match.winner === match.home_team ? match.away_team : match.home_team;
+  const winnerCode = getKnockoutWinnerCode(match);
+  const loserCode = getKnockoutLoserCode(match);
+  const winner = getTeam(winnerCode);
   const loser = getTeam(loserCode);
   if (!winner || !loser) {
     return null;
@@ -196,7 +201,7 @@ export function deriveTournamentRecapData(tournament, thirdPlaceMatch, teams, ge
     ...(tournament.bracket?.semifinals ?? []),
     ...(tournament.bracket?.final ?? []),
     ...(thirdPlaceMatch ? [thirdPlaceMatch] : []),
-  ].filter((match) => isCompleteMatch(match) && match.winner);
+  ].filter((match) => isCompleteMatch(match) && getKnockoutWinnerCode(match));
   const upsetCandidates = completedKnockoutMatches
     .map((match) => buildUpsetCandidate(match, getTeam))
     .filter(Boolean);
@@ -215,10 +220,12 @@ export function deriveTournamentRecapData(tournament, thirdPlaceMatch, teams, ge
     null,
   );
 
-  const champion = tournament.champion ? getTeam(tournament.champion) : null;
-  const runnerUpCode = tournament.runner_up ?? tournament.runnerUp ?? null;
+  const finalMatch = tournament.bracket?.final?.[0] ?? null;
+  const championCode = getKnockoutWinnerCode(finalMatch) ?? tournament.champion ?? null;
+  const champion = championCode ? getTeam(championCode) : null;
+  const runnerUpCode = getKnockoutLoserCode(finalMatch) ?? tournament.runner_up ?? tournament.runnerUp ?? null;
   const runnerUp = runnerUpCode ? getTeam(runnerUpCode) : null;
-  const thirdPlaceCode = tournament.third_place ?? tournament.thirdPlace ?? thirdPlaceMatch?.winner ?? null;
+  const thirdPlaceCode = getKnockoutWinnerCode(thirdPlaceMatch) ?? tournament.third_place ?? tournament.thirdPlace ?? null;
   const thirdPlace = thirdPlaceCode ? getTeam(thirdPlaceCode) : null;
   const semifinalists = semifinalistCodes.map((code) => getTeam(code)).filter(Boolean);
   const averageGoals = completedMatches.length
@@ -239,7 +246,7 @@ export function deriveTournamentRecapData(tournament, thirdPlaceMatch, teams, ge
         ...(tournament.bracket?.semifinals ?? []),
         ...(tournament.bracket?.final ?? []),
       ]
-        .filter((match) => match.winner === champion.code)
+        .filter((match) => getKnockoutWinnerCode(match) === champion.code)
         .map((match) => {
           const opponentCode = match.home_team === champion.code ? match.away_team : match.home_team;
           return {

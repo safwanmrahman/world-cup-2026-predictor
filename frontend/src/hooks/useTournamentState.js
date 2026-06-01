@@ -2,6 +2,8 @@ import { startTransition, useEffect, useMemo, useState } from "react";
 import { DEFAULT_CUSTOM_SIMULATION_COUNT, buildApiUrl } from "../data/constants";
 import {
   compareProbabilityRows,
+  getKnockoutLoserCode,
+  getKnockoutWinnerCode,
   getTournamentKnockoutMatches,
 } from "../utils/knockoutUtils";
 import { deriveTournamentRecapData } from "../utils/simulationUtils";
@@ -104,9 +106,9 @@ export function useTournamentState() {
         return;
       }
 
-      const semifinalLosers = sampleTournament.bracket.semifinals.map((match) =>
-        match.winner === match.home_team ? match.away_team : match.home_team,
-      );
+      const semifinalLosers = sampleTournament.bracket.semifinals
+        .map((match) => getKnockoutLoserCode(match))
+        .filter(Boolean);
 
       if (semifinalLosers.length !== 2) {
         setThirdPlaceMatch(null);
@@ -129,24 +131,14 @@ export function useTournamentState() {
         }
 
         const data = await response.json();
-        const homeGoals = data.sample_score.home_goals;
-        const awayGoals = data.sample_score.away_goals;
-        let winner = data.home_team.code;
-
-        if (awayGoals > homeGoals) {
-          winner = data.away_team.code;
-        } else if (homeGoals === awayGoals) {
-          winner = data.probabilities.home_advance >= data.probabilities.away_advance
-            ? data.home_team.code
-            : data.away_team.code;
-        }
+        const winner = getKnockoutWinnerCode(data.sample_score);
 
         setThirdPlaceMatch({
           match_id: "3P",
           home_team: data.home_team.code,
           away_team: data.away_team.code,
-          home_goals: homeGoals,
-          away_goals: awayGoals,
+          home_goals: data.sample_score.home_goals,
+          away_goals: data.sample_score.away_goals,
           winner,
           decision: data.sample_score.decision,
           penalties: data.sample_score.penalties,
@@ -321,11 +313,9 @@ export function useTournamentState() {
   );
   const sampleAverageGoals = tournamentRecapData?.averageGoals ?? null;
   const finalMatch = sampleTournament?.bracket?.final?.[0];
-  const championCode = finalMatch?.winner;
-  const runnerUpCode = finalMatch
-    ? finalMatch.winner === finalMatch.home_team ? finalMatch.away_team : finalMatch.home_team
-    : null;
-  const thirdPlaceCode = thirdPlaceMatch?.winner ?? null;
+  const championCode = getKnockoutWinnerCode(finalMatch);
+  const runnerUpCode = getKnockoutLoserCode(finalMatch);
+  const thirdPlaceCode = getKnockoutWinnerCode(thirdPlaceMatch);
   const championTeam = championCode ? getTeam(championCode) : null;
   const runnerUpTeam = runnerUpCode ? getTeam(runnerUpCode) : null;
   const thirdPlaceTeam = thirdPlaceCode ? getTeam(thirdPlaceCode) : null;

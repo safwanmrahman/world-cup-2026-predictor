@@ -4,6 +4,7 @@ import Button from "../shared/Button";
 import TeamFlag from "../shared/TeamFlag";
 import { validateScoreInput } from "../../manualPrediction";
 import { formatMatchScore } from "../../utils/formattingUtils";
+import { getKnockoutWinnerCode } from "../../utils/knockoutUtils";
 
 function getManualKnockoutCardBadges(match) {
   const badges = [];
@@ -34,6 +35,7 @@ export function KnockoutMatchCard({
 
   const home = getTeam(match.home_team);
   const away = getTeam(match.away_team);
+  const winnerCode = getKnockoutWinnerCode(match);
   const isRouteHighlighted = highlightedTeamCode && [match.home_team, match.away_team].includes(highlightedTeamCode);
   const penaltyScore = match.decision === "penalties" && match.penalties
     ? `Pens ${match.penalties.home}-${match.penalties.away}`
@@ -54,7 +56,7 @@ export function KnockoutMatchCard({
       role={onOpenDetails ? "button" : undefined}
     >
       <div
-        className={`bracket-team-row ${match.winner === match.home_team ? "winner" : ""} ${highlightedTeamCode === match.home_team ? "route-team-highlighted" : ""}`}
+        className={`bracket-team-row ${winnerCode === match.home_team ? "winner" : ""} ${highlightedTeamCode === match.home_team ? "route-team-highlighted" : ""}`}
         onMouseEnter={() => onTeamHover?.(match.home_team)}
         onClickCapture={() => onTeamPin?.(match.home_team)}
       >
@@ -65,7 +67,7 @@ export function KnockoutMatchCard({
         {"home_goals" in match ? <strong>{match.home_goals}</strong> : <span className="score-empty">-</span>}
       </div>
       <div
-        className={`bracket-team-row ${match.winner === match.away_team ? "winner" : ""} ${highlightedTeamCode === match.away_team ? "route-team-highlighted" : ""}`}
+        className={`bracket-team-row ${winnerCode === match.away_team ? "winner" : ""} ${highlightedTeamCode === match.away_team ? "route-team-highlighted" : ""}`}
         onMouseEnter={() => onTeamHover?.(match.away_team)}
         onClickCapture={() => onTeamPin?.(match.away_team)}
       >
@@ -115,15 +117,16 @@ export function ManualKnockoutMatchCard({
   const home = getTeam(match.home_team);
   const away = getTeam(match.away_team);
   const statusLabels = getManualKnockoutCardBadges(match);
+  const winnerCode = getKnockoutWinnerCode(match);
   const isRouteHighlighted = highlightedTeamCode && [match.home_team, match.away_team].includes(highlightedTeamCode);
   const matchScore = formatMatchScore(match);
   const penaltyNote = match.result_type === "PENS" && match.penalties
     ? `Pens ${match.penalties.home}-${match.penalties.away}`
     : null;
   const tiedAfterNinety = match.home_goals != null && match.away_goals != null && match.home_goals === match.away_goals;
-  const advancingTeamName = match.winner === match.home_team
+  const advancingTeamName = winnerCode === match.home_team
     ? home?.name ?? match.home_team
-    : match.winner === match.away_team
+    : winnerCode === match.away_team
       ? away?.name ?? match.away_team
       : null;
 
@@ -192,7 +195,7 @@ export function ManualKnockoutMatchCard({
         </Button>
       </div>
       <div
-        className={`bracket-team-row ${match.winner === match.home_team ? "winner" : ""} ${highlightedTeamCode === match.home_team ? "route-team-highlighted" : ""}`}
+        className={`bracket-team-row ${winnerCode === match.home_team ? "winner" : ""} ${highlightedTeamCode === match.home_team ? "route-team-highlighted" : ""}`}
         onMouseEnter={() => onTeamHover?.(match.home_team)}
         onClick={() => {
           onTeamPin?.(match.home_team);
@@ -216,7 +219,7 @@ export function ManualKnockoutMatchCard({
         {renderEditableScore("home")}
       </div>
       <div
-        className={`bracket-team-row ${match.winner === match.away_team ? "winner" : ""} ${highlightedTeamCode === match.away_team ? "route-team-highlighted" : ""}`}
+        className={`bracket-team-row ${winnerCode === match.away_team ? "winner" : ""} ${highlightedTeamCode === match.away_team ? "route-team-highlighted" : ""}`}
         onMouseEnter={() => onTeamHover?.(match.away_team)}
         onClick={() => {
           onTeamPin?.(match.away_team);
@@ -250,13 +253,13 @@ export function ManualKnockoutMatchCard({
             <span className="manual-inline-advance-label">Advances</span>
             <div className="manual-inline-advance-actions">
               <Button
-                className={match.winner === match.home_team ? "button-primary manual-inline-advance-button" : "button-secondary manual-inline-advance-button"}
+                className={winnerCode === match.home_team ? "button-primary manual-inline-advance-button" : "button-secondary manual-inline-advance-button"}
                 onClick={() => onMatchChange?.(match, { advancedTeamId: match.home_team })}
               >
                 {home?.code ?? match.home_team}
               </Button>
               <Button
-                className={match.winner === match.away_team ? "button-primary manual-inline-advance-button" : "button-secondary manual-inline-advance-button"}
+                className={winnerCode === match.away_team ? "button-primary manual-inline-advance-button" : "button-secondary manual-inline-advance-button"}
                 onClick={() => onMatchChange?.(match, { advancedTeamId: match.away_team })}
               >
                 {away?.code ?? match.away_team}

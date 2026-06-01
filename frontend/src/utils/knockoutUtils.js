@@ -12,6 +12,77 @@ export const KNOCKOUT_BIG_TEAM_CODES = new Set([
   "POR",
 ]);
 
+function normalizeStoredWinnerCode(homeCode, awayCode, winnerCode) {
+  if (winnerCode === homeCode || winnerCode === awayCode) {
+    return winnerCode;
+  }
+
+  return null;
+}
+
+export function deriveKnockoutWinnerCode(
+  homeCode,
+  awayCode,
+  homeGoals,
+  awayGoals,
+  penaltiesHome,
+  penaltiesAway,
+  storedWinner = null,
+) {
+  const fallbackWinner = normalizeStoredWinnerCode(homeCode, awayCode, storedWinner);
+
+  if (!homeCode || !awayCode) {
+    return null;
+  }
+
+  if (homeGoals == null || awayGoals == null) {
+    return fallbackWinner;
+  }
+
+  if (homeGoals > awayGoals) {
+    return homeCode;
+  }
+
+  if (awayGoals > homeGoals) {
+    return awayCode;
+  }
+
+  if (
+    penaltiesHome != null
+    && penaltiesAway != null
+    && penaltiesHome !== penaltiesAway
+  ) {
+    return penaltiesHome > penaltiesAway ? homeCode : awayCode;
+  }
+
+  return fallbackWinner;
+}
+
+export function getKnockoutWinnerCode(match) {
+  if (!match) {
+    return null;
+  }
+
+  return deriveKnockoutWinnerCode(
+    match.home_team,
+    match.away_team,
+    match.home_goals,
+    match.away_goals,
+    match.penalties?.home ?? null,
+    match.penalties?.away ?? null,
+    match.winner ?? null,
+  );
+}
+
+export function getKnockoutLoserCode(match) {
+  const winnerCode = getKnockoutWinnerCode(match);
+  if (!winnerCode || !match?.home_team || !match?.away_team) {
+    return null;
+  }
+
+  return winnerCode === match.home_team ? match.away_team : match.home_team;
+}
+
 export function getLowerRatedTeamCode(homeTeam, awayTeam) {
   if (!homeTeam || !awayTeam) {
     return null;
@@ -53,13 +124,14 @@ export function getUpsetClassification(winnerTeam, loserTeam) {
 }
 
 export function getKnockoutUpset(match, getTeam) {
-  if (!match?.home_team || !match?.away_team || !match?.winner) {
+  if (!match?.home_team || !match?.away_team) {
     return { type: "none", gap: 0, label: "", winner: null, loser: null };
   }
 
   const homeTeam = getTeam(match.home_team);
   const awayTeam = getTeam(match.away_team);
-  const winnerTeam = match.winner === homeTeam?.code ? homeTeam : match.winner === awayTeam?.code ? awayTeam : null;
+  const winnerCode = getKnockoutWinnerCode(match);
+  const winnerTeam = winnerCode === homeTeam?.code ? homeTeam : winnerCode === awayTeam?.code ? awayTeam : null;
   const loserTeam = winnerTeam?.code === homeTeam?.code ? awayTeam : winnerTeam?.code === awayTeam?.code ? homeTeam : null;
   const upset = getUpsetClassification(winnerTeam, loserTeam);
 
@@ -71,13 +143,14 @@ export function getKnockoutUpset(match, getTeam) {
 }
 
 function getKnockoutWinnerAndLoser(match, getTeam) {
-  if (!match?.home_team || !match?.away_team || !match?.winner) {
+  if (!match?.home_team || !match?.away_team) {
     return { winner: null, loser: null };
   }
 
   const homeTeam = getTeam(match.home_team);
   const awayTeam = getTeam(match.away_team);
-  const winner = match.winner === homeTeam?.code ? homeTeam : match.winner === awayTeam?.code ? awayTeam : null;
+  const winnerCode = getKnockoutWinnerCode(match);
+  const winner = winnerCode === homeTeam?.code ? homeTeam : winnerCode === awayTeam?.code ? awayTeam : null;
   const loser = winner?.code === homeTeam?.code ? awayTeam : winner?.code === awayTeam?.code ? homeTeam : null;
 
   return { winner, loser };
@@ -87,7 +160,6 @@ export function getKnockoutResultIndicators(match, getTeam) {
   if (
     !match?.home_team
     || !match?.away_team
-    || !match?.winner
     || match.home_goals == null
     || match.away_goals == null
   ) {
@@ -160,7 +232,7 @@ export function getTeamPreviousKnockoutMatch(matchPool, roundName, teamCode) {
     return null;
   }
 
-  return matchPool.find((match) => match.round === previousRound && match.winner === teamCode) ?? null;
+  return matchPool.find((match) => match.round === previousRound && getKnockoutWinnerCode(match) === teamCode) ?? null;
 }
 
 export function getKnockoutMatchOpponent(match, teamCode) {

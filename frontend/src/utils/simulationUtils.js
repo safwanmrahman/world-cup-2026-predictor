@@ -230,7 +230,6 @@ export function deriveTournamentRecapData(tournament, thirdPlaceMatch, teams, ge
     ...(tournament.bracket?.quarterfinals ?? []),
     ...(tournament.bracket?.semifinals ?? []),
     ...(tournament.bracket?.final ?? []),
-    ...(thirdPlaceMatch ? [thirdPlaceMatch] : []),
   ].filter((match) => isCompleteMatch(match) && getKnockoutWinnerCode(match));
   const upsetCandidates = completedKnockoutMatches
     .map((match) => buildUpsetCandidate(match, getTeam))

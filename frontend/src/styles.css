@@ -2105,6 +2105,10 @@ table {
   padding-bottom: 10px;
 }
 
+.knockout-modal .modal-header .section-kicker {
+  margin-bottom: 6px;
+}
+
 .knockout-modal .modal-header h3 {
   font-size: clamp(2.15rem, 2.9vw, 3rem);
   line-height: 0.96;
@@ -2348,6 +2352,22 @@ table {
   border-color: rgba(236, 72, 153, 0.28);
 }
 
+.knockout-upset-indicator-shocker {
+  border-color: rgba(239, 68, 68, 0.28);
+  background:
+    linear-gradient(135deg, rgba(239, 68, 68, 0.16), rgba(217, 164, 65, 0.12) 58%, transparent),
+    var(--bg-card-alt);
+  box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.05), 0 14px 32px rgba(239, 68, 68, 0.1);
+}
+
+.knockout-upset-indicator-thrashing {
+  border-color: rgba(217, 164, 65, 0.28);
+  background:
+    linear-gradient(135deg, rgba(217, 164, 65, 0.16), rgba(111, 123, 144, 0.1) 58%, transparent),
+    var(--bg-card-alt);
+  box-shadow: inset 0 0 0 1px rgba(217, 164, 65, 0.05), 0 14px 32px rgba(217, 164, 65, 0.08);
+}
+
 .knockout-upset-indicator svg {
   flex: 0 0 auto;
   width: 18px;
@@ -2356,6 +2376,14 @@ table {
 }
 
 .knockout-upset-indicator-slight svg {
+  color: var(--accent-primary);
+}
+
+.knockout-upset-indicator-shocker svg {
+  color: #ff6b6b;
+}
+
+.knockout-upset-indicator-thrashing svg {
   color: var(--accent-primary);
 }
 

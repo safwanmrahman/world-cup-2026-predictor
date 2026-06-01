@@ -1,5 +1,16 @@
 export const SLIGHT_UPSET_RANKING_GAP = 8;
 export const MAJOR_UPSET_RANKING_GAP = 15;
+export const KNOCKOUT_BIG_TEAM_CODES = new Set([
+  "ARG",
+  "BEL",
+  "BRA",
+  "ENG",
+  "ESP",
+  "FRA",
+  "GER",
+  "NED",
+  "POR",
+]);
 
 export function getLowerRatedTeamCode(homeTeam, awayTeam) {
   if (!homeTeam || !awayTeam) {
@@ -57,6 +68,61 @@ export function getKnockoutUpset(match, getTeam) {
     winner: winnerTeam,
     loser: loserTeam,
   };
+}
+
+function getKnockoutWinnerAndLoser(match, getTeam) {
+  if (!match?.home_team || !match?.away_team || !match?.winner) {
+    return { winner: null, loser: null };
+  }
+
+  const homeTeam = getTeam(match.home_team);
+  const awayTeam = getTeam(match.away_team);
+  const winner = match.winner === homeTeam?.code ? homeTeam : match.winner === awayTeam?.code ? awayTeam : null;
+  const loser = winner?.code === homeTeam?.code ? awayTeam : winner?.code === awayTeam?.code ? homeTeam : null;
+
+  return { winner, loser };
+}
+
+export function getKnockoutResultIndicators(match, getTeam) {
+  if (
+    !match?.home_team
+    || !match?.away_team
+    || !match?.winner
+    || match.home_goals == null
+    || match.away_goals == null
+  ) {
+    return [];
+  }
+
+  const { winner, loser } = getKnockoutWinnerAndLoser(match, getTeam);
+  if (!winner || !loser) {
+    return [];
+  }
+
+  const goalDifference = Math.abs(match.home_goals - match.away_goals);
+  const indicators = [];
+
+  if (KNOCKOUT_BIG_TEAM_CODES.has(loser.code) && goalDifference >= 3) {
+    indicators.push({
+      type: "shocker",
+      label: "Shocker",
+      winner,
+      loser,
+      goalDifference,
+    });
+  }
+
+  if (goalDifference >= 4) {
+    indicators.push({
+      type: "thrashing",
+      label: "Thrashing",
+      winner,
+      loser,
+      goalDifference,
+    });
+  }
+
+  return indicators;
 }
 
 export function isKnockoutUpset(match, getTeam) {

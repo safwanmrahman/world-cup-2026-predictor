@@ -3,6 +3,7 @@ import { buildApiUrl } from "../../data/constants";
 import { validateScoreInput } from "../../manualPrediction";
 import { formatMatchScore, formatPercent } from "../../utils/formattingUtils";
 import {
+  getKnockoutResultIndicators,
   getKnockoutUpset,
   getKnockoutMatchOpponent,
   getLowerRatedTeamCode,
@@ -91,6 +92,7 @@ export default function KnockoutMatchDetailsModal({
   const awayTeam = getTeam(match.away_team);
   const winner = match.winner ? getTeam(match.winner) : null;
   const upset = getKnockoutUpset(match, getTeam);
+  const resultIndicators = getKnockoutResultIndicators(match, getTeam);
   const lowerRatedCode = getLowerRatedTeamCode(homeTeam, awayTeam);
   const lowerRatedTeam = lowerRatedCode ? getTeam(lowerRatedCode) : null;
   const favoriteTeam = lowerRatedCode === homeTeam?.code ? awayTeam : lowerRatedCode === awayTeam?.code ? homeTeam : null;
@@ -103,6 +105,18 @@ export default function KnockoutMatchDetailsModal({
   const awayAdvanceProbability = probabilityData?.probabilities.away_advance ?? null;
   const tieAfterNinety = match.home_goals != null && match.away_goals != null && match.home_goals === match.away_goals;
   const manualStatusLabels = mode === "manual" ? getManualMatchStatus(match) : [];
+  const indicatorCopyByType = {
+    shocker: (indicator) => (
+      mode === "simulator"
+        ? `${indicator.label}: ${indicator.loser.name} were eliminated by ${indicator.goalDifference} goals.`
+        : `${indicator.label}: ${indicator.loser.name} are currently picked to lose by ${indicator.goalDifference} goals.`
+    ),
+    thrashing: (indicator) => (
+      mode === "simulator"
+        ? `${indicator.label}: ${indicator.winner.name} won by ${indicator.goalDifference} goals.`
+        : `${indicator.label}: ${indicator.winner.name} are currently picked to win by ${indicator.goalDifference} goals.`
+    ),
+  };
 
   return (
     <Modal isOpen={Boolean(match)} onClose={onClose} className="group-modal knockout-modal">
@@ -172,6 +186,12 @@ export default function KnockoutMatchDetailsModal({
                   <span>{upset.label}: {upset.winner?.name ?? "Lower-ranked team"} eliminated {upset.loser?.name ?? "the favorite"} despite trailing by {upset.gap} FIFA ranking places.</span>
                 </div>
               ) : null}
+              {resultIndicators.map((indicator) => (
+                <div className={`knockout-upset-indicator knockout-upset-indicator-${indicator.type}`} key={`${match.match_id}-${indicator.type}`}>
+                  <FireIcon />
+                  <span>{indicatorCopyByType[indicator.type]?.(indicator)}</span>
+                </div>
+              ))}
             </>
           ) : (
             <>
@@ -182,6 +202,12 @@ export default function KnockoutMatchDetailsModal({
                   <span>{upset.label}: {upset.winner?.name ?? "Lower-ranked team"} is currently picked over {upset.loser?.name ?? "the favorite"} despite trailing by {upset.gap} FIFA ranking places.</span>
                 </div>
               ) : null}
+              {resultIndicators.map((indicator) => (
+                <div className={`knockout-upset-indicator knockout-upset-indicator-${indicator.type}`} key={`${match.match_id}-${indicator.type}`}>
+                  <FireIcon />
+                  <span>{indicatorCopyByType[indicator.type]?.(indicator)}</span>
+                </div>
+              ))}
               <div className="knockout-editor-panel">
                 <div className="section-kicker">Edit Prediction</div>
                 <div className="knockout-editor-status">

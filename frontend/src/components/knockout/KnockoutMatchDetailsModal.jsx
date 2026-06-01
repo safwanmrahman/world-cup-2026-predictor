@@ -118,6 +118,11 @@ export default function KnockoutMatchDetailsModal({
         ? `${indicator.label}: ${indicator.winner.name} won by ${indicator.goalDifference} goals.`
         : `${indicator.label}: ${indicator.winner.name} are currently picked to win by ${indicator.goalDifference} goals.`
     ),
+    thriller: (indicator) => (
+      mode === "simulator"
+        ? `${indicator.label}: A high-drama knockout match decided by fine margins.`
+        : `${indicator.label}: A high-drama knockout match currently picked to be decided by fine margins.`
+    ),
   };
 
   return (

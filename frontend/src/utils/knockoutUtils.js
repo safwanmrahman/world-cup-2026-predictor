@@ -172,6 +172,8 @@ export function getKnockoutResultIndicators(match, getTeam) {
   }
 
   const goalDifference = Math.abs(match.home_goals - match.away_goals);
+  const totalGoals = match.home_goals + match.away_goals;
+  const decidedOnPenalties = match.decision === "penalties";
   const indicators = [];
 
   if (KNOCKOUT_BIG_TEAM_CODES.has(loser.code) && goalDifference >= 3) {
@@ -191,6 +193,22 @@ export function getKnockoutResultIndicators(match, getTeam) {
       winner,
       loser,
       goalDifference,
+    });
+  }
+
+  const isThriller = goalDifference < 4 && (
+    (goalDifference === 1 && totalGoals >= 5)
+    || (decidedOnPenalties && totalGoals >= 6)
+  );
+
+  if (isThriller) {
+    indicators.push({
+      type: "thriller",
+      label: "Thriller",
+      winner,
+      loser,
+      goalDifference,
+      totalGoals,
     });
   }
 

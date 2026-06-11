@@ -1193,8 +1193,10 @@ export function updateKnockoutMatch(state, match, patch) {
         nextEntry.penaltiesAway = winnerShouldBeHome ? "3" : "4";
       }
     }
-    if (penaltiesHome != null && penaltiesAway != null && penaltiesHome !== penaltiesAway) {
-      nextEntry.advancedTeamId = penaltiesHome > penaltiesAway ? match.home_team : match.away_team;
+    const resolvedPenaltiesHome = parseScore(nextEntry.penaltiesHome);
+    const resolvedPenaltiesAway = parseScore(nextEntry.penaltiesAway);
+    if (resolvedPenaltiesHome != null && resolvedPenaltiesAway != null && resolvedPenaltiesHome !== resolvedPenaltiesAway) {
+      nextEntry.advancedTeamId = resolvedPenaltiesHome > resolvedPenaltiesAway ? match.home_team : match.away_team;
       nextEntry.selectedOutcome = nextEntry.advancedTeamId === match.home_team ? "teamA" : "teamB";
       nextEntry.resultType = "PENS";
     }

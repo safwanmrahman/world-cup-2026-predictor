@@ -45,7 +45,11 @@ export function KnockoutMatchCard({
   const awayHovered = hoveredTeamCode === match.away_team;
   const homePinned = pinnedTeamCode === match.home_team;
   const awayPinned = pinnedTeamCode === match.away_team;
-  const penaltyScore = match.decision === "penalties" && match.penalties
+  const goalsEqual = match.home_goals != null && match.away_goals != null && match.home_goals === match.away_goals;
+  const penaltyScore = goalsEqual
+    && match.penalties?.home != null
+    && match.penalties?.away != null
+    && match.penalties.home !== match.penalties.away
     ? `Pens ${match.penalties.home}-${match.penalties.away}`
     : null;
 
@@ -136,10 +140,13 @@ export function ManualKnockoutMatchCard({
   const homePinned = pinnedTeamCode === match.home_team;
   const awayPinned = pinnedTeamCode === match.away_team;
   const matchScore = formatMatchScore(match);
-  const penaltyNote = match.result_type === "PENS" && match.penalties
+  const tiedAfterNinety = match.home_goals != null && match.away_goals != null && match.home_goals === match.away_goals;
+  const penaltyNote = tiedAfterNinety
+    && match.penalties?.home != null
+    && match.penalties?.away != null
+    && match.penalties.home !== match.penalties.away
     ? `Pens ${match.penalties.home}-${match.penalties.away}`
     : null;
-  const tiedAfterNinety = match.home_goals != null && match.away_goals != null && match.home_goals === match.away_goals;
   const advancingTeamName = winnerCode === match.home_team
     ? home?.name ?? match.home_team
     : winnerCode === match.away_team

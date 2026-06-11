@@ -3565,6 +3565,7 @@ table {
 
 .recap-upset {
   background: var(--bg-secondary);
+  margin-top: 12px;
 }
 
 .recap-award span,
@@ -3775,7 +3776,7 @@ table {
 .recap-upset-watch-card {
   min-height: 100%;
   display: grid;
-  align-content: start;
+  grid-template-rows: auto auto 1fr;
 }
 
 .recap-stats-panel {

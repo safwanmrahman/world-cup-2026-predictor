@@ -95,9 +95,9 @@ def _simulate_penalty_shootout_attempt(
             remaining_other = PENALTY_REGULATION_KICKS - kicks_taken[other_side]
 
             if scores[side] > scores[other_side] + remaining_other:
-                return scores
+                return scores if side == winner_side else None
             if scores[other_side] > scores[side] + remaining_side:
-                return scores
+                return scores if other_side == winner_side else None
 
     if scores["home"] != scores["away"]:
         return scores if scores[winner_side] > scores["away" if winner_side == "home" else "home"] else None

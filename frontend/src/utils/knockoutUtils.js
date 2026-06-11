@@ -36,6 +36,13 @@ export function deriveKnockoutWinnerCode(
   }
 
   if (homeGoals == null || awayGoals == null) {
+    if (
+      penaltiesHome != null
+      && penaltiesAway != null
+      && penaltiesHome !== penaltiesAway
+    ) {
+      return penaltiesHome > penaltiesAway ? homeCode : awayCode;
+    }
     return fallbackWinner;
   }
 

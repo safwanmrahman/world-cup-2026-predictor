@@ -948,14 +948,23 @@ function buildFollowUpMatches(roundKey, winnersByMatch, savedMatches) {
   return KNOCKOUT_ROUND_LINKS[roundKey].map((template) => {
     const homeSourceMatch = winnersByMatch[template.home_source] ?? null;
     const awaySourceMatch = winnersByMatch[template.away_source] ?? null;
+    const derivedHome = getKnockoutWinnerCode(homeSourceMatch);
+    const derivedAway = getKnockoutWinnerCode(awaySourceMatch);
     const baseMatch = {
       match_id: template.match_id,
       round: template.round,
-      home_team: getKnockoutWinnerCode(homeSourceMatch),
-      away_team: getKnockoutWinnerCode(awaySourceMatch),
+      home_team: derivedHome,
+      away_team: derivedAway,
     };
 
-    return hydrateMatchState(baseMatch, savedMatches[template.match_id]);
+    const saved = savedMatches[template.match_id];
+    const savedHomeCode = saved?.homeTeamCode ?? null;
+    const savedAwayCode = saved?.awayTeamCode ?? null;
+    const hasSavedSnapshot = savedHomeCode != null || savedAwayCode != null;
+    const teamsMatch = !hasSavedSnapshot
+      || (savedHomeCode === derivedHome && savedAwayCode === derivedAway);
+
+    return hydrateMatchState(baseMatch, teamsMatch ? saved : undefined);
   });
 }
 

@@ -85,13 +85,13 @@ export default function HeadToHeadPredictor({
 
         <div className="vs-card">
           <div className={`vs-team ${predictionWinnerCode === homeTeam?.code ? "vs-team-winner" : ""}`}>
-            <TeamFlag code={homeTeam?.code} size="lg" alt={`${homeTeam?.name ?? ""} flag`} />
+            <TeamFlag code={homeTeam?.code} size="hero" alt={`${homeTeam?.name ?? ""} flag`} />
             <div className="vs-name">{homeTeam?.name}</div>
             <div className="vs-code">{homeTeam?.code}</div>
           </div>
           <div className={`vs-pill ${prediction ? "vs-score" : ""}`}>{formatPredictionScore(prediction)}</div>
           <div className={`vs-team ${predictionWinnerCode === awayTeam?.code ? "vs-team-winner" : ""}`}>
-            <TeamFlag code={awayTeam?.code} size="lg" alt={`${awayTeam?.name ?? ""} flag`} />
+            <TeamFlag code={awayTeam?.code} size="hero" alt={`${awayTeam?.name ?? ""} flag`} />
             <div className="vs-name">{awayTeam?.name}</div>
             <div className="vs-code">{awayTeam?.code}</div>
           </div>

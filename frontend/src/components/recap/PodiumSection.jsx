@@ -4,7 +4,7 @@ function PodiumCard({ label, teamCode, teamName, tone, size = "normal" }) {
   return (
     <div className={`podium-card podium-${tone} podium-${size}`}>
       <div className="podium-label">{label}</div>
-      <TeamFlag code={teamCode} size="xl" alt={`${teamName} flag`} />
+      <TeamFlag code={teamCode} size="hero" alt={`${teamName} flag`} />
       <div className="podium-name">{teamName}</div>
       <div className="podium-code">{teamCode}</div>
     </div>

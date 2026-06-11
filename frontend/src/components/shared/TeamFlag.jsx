@@ -5,6 +5,7 @@ const FLAG_DIMENSIONS = {
   sm: { width: 24, height: 18, fallbackHeight: 36 },
   md: { width: 32, height: 24, fallbackHeight: 48 },
   lg: { width: 64, height: 48, fallbackHeight: 96 },
+  hero: { width: 80, height: 60, fallbackHeight: 120 },
   xl: { width: 96, height: 72, fallbackHeight: 144 },
 };
 

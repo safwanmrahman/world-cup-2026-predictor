@@ -24,10 +24,12 @@ export function buildApiUrl(path) {
 export const THEME_STORAGE_KEY = "wc26-theme";
 export const DEFAULT_SIMULATION_COUNT = 100;
 export const DEFAULT_CUSTOM_SIMULATION_COUNT = 100;
+export const PUBLIC_SIMULATION_MAX = 5000;
 export const TOURNAMENT_TABS = [
   { id: "groups", label: "Group Stage" },
   { id: "knockout", label: "Knockout Stage" },
   { id: "recap", label: "Recap" },
+  { id: "stats", label: "Tournament Stats" },
 ];
 export const TROPHY_PNG_URL = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f3c6.png";
 

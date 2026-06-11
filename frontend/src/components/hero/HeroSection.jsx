@@ -19,11 +19,10 @@ export default function HeroSection({
       <ThemeToggle theme={theme} onToggle={onToggleTheme} />
 
       <div className="hero-copy">
-        <h1 className="hero-title">FIFA WORLD CUP 2026 PREDICTOR</h1>
-        <p className="hero-subtitle">
-          Simulate the full 48-team World Cup with score-based match outcomes, live group tables,
-          a real knockout path, and a cleaner matchday experience.
-        </p>
+        <h1 className="hero-title">
+          <span className="hero-title-prefix">FIFA World Cup 2026</span>
+          <span className="hero-title-highlight">Predictor</span>
+        </h1>
       </div>
 
       <section className="mode-switcher">

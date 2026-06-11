@@ -174,9 +174,10 @@ export function getKnockoutResultIndicators(match, getTeam) {
   const goalDifference = Math.abs(match.home_goals - match.away_goals);
   const totalGoals = match.home_goals + match.away_goals;
   const decidedOnPenalties = match.decision === "penalties";
+  const isThirdPlaceMatch = match.round === "Third Place";
   const indicators = [];
 
-  if (KNOCKOUT_BIG_TEAM_CODES.has(loser.code) && goalDifference >= 3) {
+  if (!isThirdPlaceMatch && KNOCKOUT_BIG_TEAM_CODES.has(loser.code) && goalDifference >= 3) {
     indicators.push({
       type: "shocker",
       label: "Shocker",

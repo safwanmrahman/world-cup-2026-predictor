@@ -25,6 +25,15 @@ const RECAP_UPSET_ROUND_PRIORITY = {
   Final: 5,
 };
 
+const DARK_HORSE_STAGE_PRIORITY = {
+  "Round of 16": 1,
+  Quarterfinalist: 2,
+  Semifinalist: 3,
+  "3rd Place": 4,
+  "Runner-up": 5,
+  Champion: 6,
+};
+
 function buildUpsetCandidate(match, getTeam) {
   const winnerCode = getKnockoutWinnerCode(match);
   const loserCode = getKnockoutLoserCode(match);
@@ -89,6 +98,68 @@ function selectBestCandidate(candidates, comparator) {
 
     return comparator(candidate, best) > 0 ? candidate : best;
   }, null);
+}
+
+function buildDarkHorsePool(tournament, thirdPlaceMatch) {
+  const roundOf16Codes = Array.from(new Set(getRoundOf16QualifiedTeamCodes(tournament)));
+  const quarterfinalistCodes = Array.from(new Set((tournament.bracket?.quarterfinals ?? []).flatMap((match) => [match.home_team, match.away_team]).filter(Boolean)));
+  const semifinalistCodes = Array.from(new Set((tournament.bracket?.semifinals ?? []).flatMap((match) => [match.home_team, match.away_team]).filter(Boolean)));
+  const finalMatch = tournament.bracket?.final?.[0] ?? null;
+  const finalistCodes = finalMatch ? [finalMatch.home_team, finalMatch.away_team].filter(Boolean) : [];
+  const championCode = getKnockoutWinnerCode(finalMatch) ?? tournament.champion ?? null;
+  const runnerUpCode = getKnockoutLoserCode(finalMatch) ?? tournament.runner_up ?? tournament.runnerUp ?? null;
+  const thirdPlaceCode = getKnockoutWinnerCode(thirdPlaceMatch) ?? tournament.third_place ?? tournament.thirdPlace ?? null;
+
+  return roundOf16Codes.map((code) => {
+    let stage = "Round of 16";
+    if (quarterfinalistCodes.includes(code)) {
+      stage = "Quarterfinalist";
+    }
+    if (semifinalistCodes.includes(code)) {
+      stage = "Semifinalist";
+    }
+    if (code === thirdPlaceCode) {
+      stage = "3rd Place";
+    }
+    if (code === runnerUpCode) {
+      stage = "Runner-up";
+    }
+    if (code === championCode) {
+      stage = "Champion";
+    }
+
+    return {
+      code,
+      stage,
+      priority: DARK_HORSE_STAGE_PRIORITY[stage] ?? 0,
+    };
+  });
+}
+
+function compareDarkHorseCandidates(left, right, getTeam) {
+  const leftTeam = getTeam(left.code);
+  const rightTeam = getTeam(right.code);
+  return (
+    left.priority - right.priority
+    || (leftTeam?.fifa_ranking ?? -Infinity) - (rightTeam?.fifa_ranking ?? -Infinity)
+    || left.code.localeCompare(right.code)
+  );
+}
+
+function selectDarkHorse(tournament, thirdPlaceMatch, getTeam) {
+  const allCandidates = buildDarkHorsePool(tournament, thirdPlaceMatch)
+    .filter((candidate) => candidate.code && !RECAP_BIG_TEAM_CODES.has(candidate.code));
+  const quarterfinalOrBetter = allCandidates.filter((candidate) => candidate.priority >= DARK_HORSE_STAGE_PRIORITY.Quarterfinalist);
+  const pool = quarterfinalOrBetter.length ? quarterfinalOrBetter : allCandidates;
+  const winner = selectBestCandidate(pool, (left, right) => compareDarkHorseCandidates(left, right, getTeam));
+  if (!winner) {
+    return null;
+  }
+
+  return {
+    team: getTeam(winner.code),
+    stage: winner.stage,
+  };
 }
 
 function formatChampionPathScore(match, championCode) {
@@ -175,6 +246,34 @@ export function isCompleteMatch(match) {
   return match?.home_team && match?.away_team && match.home_goals != null && match.away_goals != null;
 }
 
+function getCompletedMatchResult(match) {
+  if (!isCompleteMatch(match)) {
+    return null;
+  }
+
+  if (match.home_goals > match.away_goals) {
+    return { homeOutcome: "win", awayOutcome: "loss" };
+  }
+
+  if (match.away_goals > match.home_goals) {
+    return { homeOutcome: "loss", awayOutcome: "win" };
+  }
+
+  const penaltiesHome = match.penalties?.home ?? null;
+  const penaltiesAway = match.penalties?.away ?? null;
+  if (
+    penaltiesHome != null
+    && penaltiesAway != null
+    && penaltiesHome !== penaltiesAway
+  ) {
+    return penaltiesHome > penaltiesAway
+      ? { homeOutcome: "win", awayOutcome: "loss" }
+      : { homeOutcome: "loss", awayOutcome: "win" };
+  }
+
+  return { homeOutcome: "draw", awayOutcome: "draw" };
+}
+
 function getRoundOf16QualifiedTeamCodes(tournament) {
   const qualifiedFromResults = tournament.round_of_16_teams ?? tournament.roundOf16Teams ?? null;
   if (qualifiedFromResults?.length) {
@@ -187,6 +286,102 @@ function getRoundOf16QualifiedTeamCodes(tournament) {
     .filter(Boolean);
 }
 
+export function deriveTournamentTeamStats(tournament, thirdPlaceMatch, teams, getTeam) {
+  if (!tournament) {
+    return [];
+  }
+
+  const completedMatches = collectTournamentMatches(tournament, thirdPlaceMatch).filter(isCompleteMatch);
+  const teamStats = new Map();
+
+  const ensureTeamStats = (code) => {
+    if (!code || teamStats.has(code)) {
+      return teamStats.get(code) ?? null;
+    }
+
+    const team = getTeam(code) ?? teams.find((entry) => entry.code === code) ?? null;
+    if (!team) {
+      return null;
+    }
+
+    const entry = {
+      code,
+      team,
+      matchesPlayed: 0,
+      wins: 0,
+      draws: 0,
+      losses: 0,
+      points: 0,
+      totalGoalsScored: 0,
+      totalGoalsConceded: 0,
+      goalDifference: 0,
+      cleanSheets: 0,
+      averageGoalsScored: 0,
+      averageGoalsConceded: 0,
+      record: "0-0-0",
+    };
+    teamStats.set(code, entry);
+    return entry;
+  };
+
+  completedMatches.forEach((match) => {
+    const homeEntry = ensureTeamStats(match.home_team);
+    const awayEntry = ensureTeamStats(match.away_team);
+    if (!homeEntry || !awayEntry) {
+      return;
+    }
+
+    const outcome = getCompletedMatchResult(match);
+    if (!outcome) {
+      return;
+    }
+
+    homeEntry.matchesPlayed += 1;
+    awayEntry.matchesPlayed += 1;
+    homeEntry.totalGoalsScored += match.home_goals;
+    homeEntry.totalGoalsConceded += match.away_goals;
+    awayEntry.totalGoalsScored += match.away_goals;
+    awayEntry.totalGoalsConceded += match.home_goals;
+
+    if (match.away_goals === 0) {
+      homeEntry.cleanSheets += 1;
+    }
+    if (match.home_goals === 0) {
+      awayEntry.cleanSheets += 1;
+    }
+
+    if (outcome.homeOutcome === "win") {
+      homeEntry.wins += 1;
+      homeEntry.points += 3;
+      awayEntry.losses += 1;
+    } else if (outcome.awayOutcome === "win") {
+      awayEntry.wins += 1;
+      awayEntry.points += 3;
+      homeEntry.losses += 1;
+    } else {
+      homeEntry.draws += 1;
+      awayEntry.draws += 1;
+      homeEntry.points += 1;
+      awayEntry.points += 1;
+    }
+  });
+
+  return Array.from(teamStats.values())
+    .filter((entry) => entry.matchesPlayed > 0)
+    .map((entry) => {
+      const averageGoalsScored = entry.totalGoalsScored / entry.matchesPlayed;
+      const averageGoalsConceded = entry.totalGoalsConceded / entry.matchesPlayed;
+      const goalDifference = entry.totalGoalsScored - entry.totalGoalsConceded;
+      return {
+        ...entry,
+        averageGoalsScored,
+        averageGoalsConceded,
+        goalDifference,
+        record: `${entry.wins}-${entry.draws}-${entry.losses}`,
+      };
+    });
+}
+
 export function deriveTournamentRecapData(tournament, thirdPlaceMatch, teams, getTeam) {
   if (!tournament) {
     return null;
@@ -194,6 +389,7 @@ export function deriveTournamentRecapData(tournament, thirdPlaceMatch, teams, ge
 
   const allMatches = collectTournamentMatches(tournament, thirdPlaceMatch);
   const completedMatches = allMatches.filter(isCompleteMatch);
+  const teamStats = deriveTournamentTeamStats(tournament, thirdPlaceMatch, teams, getTeam);
   const goalsFor = Object.fromEntries(teams.map((team) => [team.code, 0]));
   const goalsAgainst = Object.fromEntries(teams.map((team) => [team.code, 0]));
 
@@ -224,6 +420,7 @@ export function deriveTournamentRecapData(tournament, thirdPlaceMatch, teams, ge
       .filter((code) => goalsAgainst[code] === minConceded)
       .map((code) => getTeam(code))
       .filter(Boolean);
+  const darkHorse = selectDarkHorse(tournament, thirdPlaceMatch, getTeam);
   const completedKnockoutMatches = [
     ...(tournament.bracket?.round_of_32 ?? []),
     ...(tournament.bracket?.round_of_16 ?? []),
@@ -289,11 +486,13 @@ export function deriveTournamentRecapData(tournament, thirdPlaceMatch, teams, ge
     topGoals,
     bestDefenseTeams,
     minConceded,
+    darkHorse,
     biggestUpset,
     championGoals,
     championGoalsAgainst,
     semifinalResults,
     totalGoals: completedMatches.reduce((sum, match) => sum + match.home_goals + match.away_goals, 0),
     championPath,
+    teamStats,
   };
 }

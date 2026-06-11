@@ -1,4 +1,4 @@
-import { DEFAULT_SIMULATION_COUNT } from "../../data/constants";
+import { DEFAULT_SIMULATION_COUNT, PUBLIC_SIMULATION_MAX } from "../../data/constants";
 import Button from "../shared/Button";
 
 export default function HeroActions({
@@ -42,7 +42,7 @@ export default function HeroActions({
           <input
             type="number"
             min="1"
-            max="10000"
+            max={PUBLIC_SIMULATION_MAX}
             value={simulationCount}
             onChange={(event) => {
               const rawValue = event.target.value;
@@ -51,7 +51,7 @@ export default function HeroActions({
                 return;
               }
 
-              const normalized = String(Math.min(10000, Math.max(1, Number(rawValue))));
+              const normalized = String(Math.min(PUBLIC_SIMULATION_MAX, Math.max(1, Number(rawValue))));
               setSimulationCount(normalized);
             }}
           />

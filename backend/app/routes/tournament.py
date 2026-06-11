@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from ..models.schemas import MatchPredictionRequest, TournamentSimulationRequest
 from ..services.data_service import get_group_fixtures_flat, get_group_payload, get_team_by_code, get_teams_payload
@@ -7,8 +7,8 @@ from ..services.tournament_service import simulate_tournament, simulate_tourname
 from ..utils.security import (
     PUBLIC_SIMULATION_MAX,
     PREDICT_MATCH_RULE,
-    SIMULATE_BATCH_RULE,
     SIMULATE_ONE_RULE,
+    enforce_weighted_batch_budget,
     throttle,
 )
 
@@ -57,12 +57,13 @@ def simulate_one_route(
 
 @router.post("/simulate-tournament")
 def simulate_tournament_route(
+    request: Request,
     payload: TournamentSimulationRequest,
-    _rate_limit: None = Depends(throttle("simulate-tournament", SIMULATE_BATCH_RULE)),
 ) -> dict:
     if payload.simulations > PUBLIC_SIMULATION_MAX:
         raise HTTPException(
             status_code=400,
             detail=f"Simulation count exceeds the public limit of {PUBLIC_SIMULATION_MAX}.",
         )
+    enforce_weighted_batch_budget(request, payload.simulations)
     return simulate_tournament(payload.simulations)

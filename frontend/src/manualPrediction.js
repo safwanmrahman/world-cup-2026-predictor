@@ -402,6 +402,8 @@ function createDefaultKnockoutState() {
     penaltiesAway: "",
     selectedOutcome: null,
     advancedTeamId: null,
+    homeTeamCode: null,
+    awayTeamCode: null,
     source: null,
     resultType: "REGULAR",
   };
@@ -438,6 +440,8 @@ function sanitizeKnockoutEntry(value, validTeamCodes) {
   }
 
   const advancedTeamId = validTeamCodes.has(value.advancedTeamId) ? value.advancedTeamId : null;
+  const homeTeamCode = validTeamCodes.has(value.homeTeamCode) ? value.homeTeamCode : null;
+  const awayTeamCode = validTeamCodes.has(value.awayTeamCode) ? value.awayTeamCode : null;
 
   return {
     homeGoals: sanitizeStringScore(value.homeGoals),
@@ -446,6 +450,8 @@ function sanitizeKnockoutEntry(value, validTeamCodes) {
     penaltiesAway: sanitizeStringScore(value.penaltiesAway),
     selectedOutcome: normalizeSelectedOutcome(value.selectedOutcome, KNOCKOUT_OUTCOMES),
     advancedTeamId,
+    homeTeamCode,
+    awayTeamCode,
     source: normalizeSource(value.source),
     resultType: normalizeResultType(value.resultType),
   };
@@ -787,6 +793,67 @@ function deriveKnockoutWinner(homeCode, awayCode, homeGoals, awayGoals, penaltie
   );
 }
 
+function getSavedKnockoutWinnerCode(match, stateEntry) {
+  if (!match?.home_team || !match?.away_team || !stateEntry) {
+    return null;
+  }
+
+  const fallbackWinner =
+    stateEntry.advancedTeamId
+    ?? (stateEntry.selectedOutcome === "teamA"
+      ? match.home_team
+      : stateEntry.selectedOutcome === "teamB"
+        ? match.away_team
+        : null);
+
+  return deriveKnockoutWinner(
+    match.home_team,
+    match.away_team,
+    parseScore(stateEntry.homeGoals),
+    parseScore(stateEntry.awayGoals),
+    parseScore(stateEntry.penaltiesHome),
+    parseScore(stateEntry.penaltiesAway),
+    fallbackWinner,
+  );
+}
+
+function stampKnockoutEntryTeams(entry, match) {
+  return {
+    ...entry,
+    homeTeamCode: match?.home_team ?? null,
+    awayTeamCode: match?.away_team ?? null,
+  };
+}
+
+function getDependentKnockoutMatchIds(matchId, collected = new Set()) {
+  Object.values(KNOCKOUT_ROUND_LINKS)
+    .flat()
+    .forEach((template) => {
+      if (template.home_source !== matchId && template.away_source !== matchId) {
+        return;
+      }
+
+      if (!collected.has(template.match_id)) {
+        collected.add(template.match_id);
+        getDependentKnockoutMatchIds(template.match_id, collected);
+      }
+    });
+
+  if ((matchId === 101 || matchId === 102) && !collected.has("3P")) {
+    collected.add("3P");
+  }
+
+  return collected;
+}
+
+function clearDependentKnockoutMatches(knockoutMatches, matchId) {
+  const nextMatches = { ...knockoutMatches };
+  getDependentKnockoutMatchIds(matchId).forEach((dependentMatchId) => {
+    delete nextMatches[dependentMatchId];
+  });
+  return nextMatches;
+}
+
 function hydrateMatchState(baseMatch, savedMatch = {}) {
   if (!baseMatch.home_team || !baseMatch.away_team) {
     return {
@@ -804,9 +871,11 @@ function hydrateMatchState(baseMatch, savedMatch = {}) {
     };
   }
 
-  const teamsChanged =
-    savedMatch.home_team
-    && (savedMatch.home_team !== baseMatch.home_team || savedMatch.away_team !== baseMatch.away_team);
+  const hasSavedParticipantSnapshot = savedMatch.homeTeamCode != null || savedMatch.awayTeamCode != null;
+  const teamsChanged = hasSavedParticipantSnapshot && (
+    savedMatch.homeTeamCode !== baseMatch.home_team
+    || savedMatch.awayTeamCode !== baseMatch.away_team
+  );
   const sourceState = {
     ...createDefaultKnockoutState(),
     ...(teamsChanged ? {} : savedMatch),
@@ -815,7 +884,15 @@ function hydrateMatchState(baseMatch, savedMatch = {}) {
   const awayGoals = parseScore(sourceState.awayGoals);
   const penaltiesHome = parseScore(sourceState.penaltiesHome);
   const penaltiesAway = parseScore(sourceState.penaltiesAway);
-  const explicitWinner = sourceState.advancedTeamId ?? sourceState.winner ?? null;
+  const explicitWinner =
+    sourceState.advancedTeamId
+    ?? (sourceState.selectedOutcome === "teamA"
+      ? baseMatch.home_team
+      : sourceState.selectedOutcome === "teamB"
+        ? baseMatch.away_team
+        : null)
+    ?? sourceState.winner
+    ?? null;
   const winner = deriveKnockoutWinner(
     baseMatch.home_team,
     baseMatch.away_team,
@@ -831,9 +908,9 @@ function hydrateMatchState(baseMatch, savedMatch = {}) {
       ? homeGoals > awayGoals
         ? "teamA"
         : "teamB"
-      : explicitWinner === baseMatch.home_team
+      : winner === baseMatch.home_team
         ? "teamA"
-        : explicitWinner === baseMatch.away_team
+        : winner === baseMatch.away_team
           ? "teamB"
           : null;
   const decision =
@@ -869,11 +946,13 @@ function hydrateMatchState(baseMatch, savedMatch = {}) {
 
 function buildFollowUpMatches(roundKey, winnersByMatch, savedMatches) {
   return KNOCKOUT_ROUND_LINKS[roundKey].map((template) => {
+    const homeSourceMatch = winnersByMatch[template.home_source] ?? null;
+    const awaySourceMatch = winnersByMatch[template.away_source] ?? null;
     const baseMatch = {
       match_id: template.match_id,
       round: template.round,
-      home_team: winnersByMatch[template.home_source]?.winner ?? null,
-      away_team: winnersByMatch[template.away_source]?.winner ?? null,
+      home_team: getKnockoutWinnerCode(homeSourceMatch),
+      away_team: getKnockoutWinnerCode(awaySourceMatch),
     };
 
     return hydrateMatchState(baseMatch, savedMatches[template.match_id]);
@@ -1057,6 +1136,7 @@ export function updateKnockoutMatch(state, match, patch) {
     ...createDefaultKnockoutState(),
     ...(state.knockoutMatches[match.match_id] ?? {}),
   };
+  const previousWinner = getSavedKnockoutWinnerCode(match, entry);
   const nextEntry = {
     ...entry,
     ...patch,
@@ -1120,47 +1200,100 @@ export function updateKnockoutMatch(state, match, patch) {
     }
   }
 
+  const normalizedHomeGoals = parseScore(nextEntry.homeGoals);
+  const normalizedAwayGoals = parseScore(nextEntry.awayGoals);
+  const normalizedPenaltiesHome = parseScore(nextEntry.penaltiesHome);
+  const normalizedPenaltiesAway = parseScore(nextEntry.penaltiesAway);
+  const fallbackWinner =
+    nextEntry.advancedTeamId
+    ?? (nextEntry.selectedOutcome === "teamA"
+      ? match.home_team
+      : nextEntry.selectedOutcome === "teamB"
+        ? match.away_team
+        : null);
+  const derivedWinner = deriveKnockoutWinner(
+    match.home_team,
+    match.away_team,
+    normalizedHomeGoals,
+    normalizedAwayGoals,
+    normalizedPenaltiesHome,
+    normalizedPenaltiesAway,
+    fallbackWinner,
+  );
+
+  nextEntry.advancedTeamId = derivedWinner;
+  if (normalizedHomeGoals != null && normalizedAwayGoals != null) {
+    if (normalizedHomeGoals > normalizedAwayGoals) {
+      nextEntry.selectedOutcome = "teamA";
+    } else if (normalizedAwayGoals > normalizedHomeGoals) {
+      nextEntry.selectedOutcome = "teamB";
+    } else if (derivedWinner === match.home_team) {
+      nextEntry.selectedOutcome = "teamA";
+    } else if (derivedWinner === match.away_team) {
+      nextEntry.selectedOutcome = "teamB";
+    }
+  }
+
   nextEntry.source =
     nextEntry.homeGoals === "" && nextEntry.awayGoals === ""
       ? nextEntry.selectedOutcome
         ? nextEntry.source
         : null
       : patch.source ?? "manual-score";
+  const stampedEntry = stampKnockoutEntryTeams(nextEntry, match);
+  const nextWinner = getSavedKnockoutWinnerCode(match, stampedEntry);
+  const knockoutMatches = previousWinner !== nextWinner
+    ? clearDependentKnockoutMatches(state.knockoutMatches, match.match_id)
+    : { ...state.knockoutMatches };
+  knockoutMatches[match.match_id] = stampedEntry;
 
   return {
     ...state,
-    knockoutMatches: {
-      ...state.knockoutMatches,
-      [match.match_id]: nextEntry,
-    },
+    knockoutMatches,
     updatedAt: Date.now(),
   };
 }
 
 export function quickPickKnockoutMatch(state, match, teamsByCode, selectedOutcome) {
+  const previousEntry = {
+    ...createDefaultKnockoutState(),
+    ...(state.knockoutMatches[match.match_id] ?? {}),
+  };
+  const previousWinner = getSavedKnockoutWinnerCode(match, previousEntry);
   const generated = generateRealisticScore(
     teamsByCode[match.home_team],
     teamsByCode[match.away_team],
     selectedOutcome,
     "knockout",
   );
-  const advancedTeamId = selectedOutcome === "teamA" ? match.home_team : match.away_team;
+  const advancedTeamId = deriveKnockoutWinner(
+    match.home_team,
+    match.away_team,
+    generated.scoreA,
+    generated.scoreB,
+    generated.penaltiesHome,
+    generated.penaltiesAway,
+    selectedOutcome === "teamA" ? match.home_team : match.away_team,
+  );
+  const nextEntry = stampKnockoutEntryTeams({
+    homeGoals: String(generated.scoreA),
+    awayGoals: String(generated.scoreB),
+    penaltiesHome: generated.penaltiesHome != null ? String(generated.penaltiesHome) : "",
+    penaltiesAway: generated.penaltiesAway != null ? String(generated.penaltiesAway) : "",
+    selectedOutcome,
+    advancedTeamId,
+    source: "quick-pick-generated-score",
+    resultType: generated.resultType,
+  }, match);
+  const nextWinner = getSavedKnockoutWinnerCode(match, nextEntry);
+  const knockoutMatches = previousWinner !== nextWinner
+    ? clearDependentKnockoutMatches(state.knockoutMatches, match.match_id)
+    : { ...state.knockoutMatches };
+  knockoutMatches[match.match_id] = nextEntry;
 
   return {
     ...state,
-    knockoutMatches: {
-      ...state.knockoutMatches,
-      [match.match_id]: {
-        homeGoals: String(generated.scoreA),
-        awayGoals: String(generated.scoreB),
-        penaltiesHome: generated.penaltiesHome != null ? String(generated.penaltiesHome) : "",
-        penaltiesAway: generated.penaltiesAway != null ? String(generated.penaltiesAway) : "",
-        selectedOutcome,
-        advancedTeamId,
-        source: "quick-pick-generated-score",
-        resultType: generated.resultType,
-      },
-    },
+    knockoutMatches,
     updatedAt: Date.now(),
   };
 }
@@ -1288,8 +1421,26 @@ export function toggleAdvancedOverride(state, groupName) {
 }
 
 export function buildPersistedManualState(state, derived) {
+  const derivedMatchesById = new Map(
+    [
+      ...(derived?.bracket?.round_of_32 ?? []),
+      ...(derived?.bracket?.round_of_16 ?? []),
+      ...(derived?.bracket?.quarterfinals ?? []),
+      ...(derived?.bracket?.semifinals ?? []),
+      ...(derived?.bracket?.final ?? []),
+      ...(derived?.thirdPlaceMatch ? [derived.thirdPlaceMatch] : []),
+    ].map((match) => [String(match.match_id), match]),
+  );
+  const knockoutMatches = Object.fromEntries(
+    Object.entries(state.knockoutMatches ?? {}).map(([matchId, entry]) => {
+      const derivedMatch = derivedMatchesById.get(String(matchId));
+      return [matchId, derivedMatch ? stampKnockoutEntryTeams(entry, derivedMatch) : entry];
+    }),
+  );
+
   return {
     ...state,
+    knockoutMatches,
     groupTables: derived.groupTables,
     groupAdvancers: derived.groupAdvancers,
     champion: derived.champion,

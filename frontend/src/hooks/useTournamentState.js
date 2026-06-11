@@ -1,5 +1,5 @@
 import { startTransition, useEffect, useMemo, useState } from "react";
-import { DEFAULT_CUSTOM_SIMULATION_COUNT, buildApiUrl } from "../data/constants";
+import { DEFAULT_CUSTOM_SIMULATION_COUNT, PUBLIC_SIMULATION_MAX, buildApiUrl } from "../data/constants";
 import {
   compareProbabilityRows,
   getKnockoutLoserCode,
@@ -353,7 +353,10 @@ export function useTournamentState() {
   const summaryBestDefenseValue = sampleBestDefenseGoalsAgainst;
   const summaryBestDefenseTeams = sampleBestDefenseTeams;
   const summaryBestDefenseMode = "total";
-  const normalizedSimulationCount = Math.min(10000, Math.max(1, Number(simulationCount) || DEFAULT_CUSTOM_SIMULATION_COUNT));
+  const normalizedSimulationCount = Math.min(
+    PUBLIC_SIMULATION_MAX,
+    Math.max(1, Number(simulationCount) || DEFAULT_CUSTOM_SIMULATION_COUNT),
+  );
   const homeTeam = getTeam(predictionForm.home_team_code);
   const awayTeam = getTeam(predictionForm.away_team_code);
   const isKnockoutPrediction = prediction?.stage === "knockout";

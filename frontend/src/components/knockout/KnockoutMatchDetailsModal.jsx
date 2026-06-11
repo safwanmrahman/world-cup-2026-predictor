@@ -7,7 +7,6 @@ import {
   getKnockoutUpset,
   getKnockoutMatchOpponent,
   getKnockoutWinnerCode,
-  getLowerRatedTeamCode,
   getTeamPreviousKnockoutMatch,
 } from "../../utils/knockoutUtils";
 import Modal from "../shared/Modal";
@@ -95,9 +94,6 @@ export default function KnockoutMatchDetailsModal({
   const winner = winnerCode ? getTeam(winnerCode) : null;
   const upset = getKnockoutUpset(match, getTeam);
   const resultIndicators = getKnockoutResultIndicators(match, getTeam);
-  const lowerRatedCode = getLowerRatedTeamCode(homeTeam, awayTeam);
-  const lowerRatedTeam = lowerRatedCode ? getTeam(lowerRatedCode) : null;
-  const favoriteTeam = lowerRatedCode === homeTeam?.code ? awayTeam : lowerRatedCode === awayTeam?.code ? homeTeam : null;
   const currentPickLabel = winnerCode ? `${winner?.name ?? winnerCode} selected` : "Awaiting pick";
   const homePrevious = getTeamPreviousKnockoutMatch(matchPool ?? [], match.round, match.home_team);
   const awayPrevious = getTeamPreviousKnockoutMatch(matchPool ?? [], match.round, match.away_team);
@@ -136,13 +132,9 @@ export default function KnockoutMatchDetailsModal({
       <div className="modal-section knockout-modal-body">
         <div className="knockout-modal-scoreboard">
           <div className={`knockout-modal-team ${winnerCode === match.home_team ? "winner" : ""} ${winnerCode && winnerCode !== match.home_team ? "loser" : ""}`}>
-            <TeamFlag code={homeTeam?.code ?? match.home_team} size="lg" alt={`${homeTeam?.name ?? match.home_team} flag`} />
+            <TeamFlag code={homeTeam?.code ?? match.home_team} size="hero" alt={`${homeTeam?.name ?? match.home_team} flag`} />
             <strong>{homeTeam?.name ?? match.home_team}</strong>
             <span>{homeTeam?.code ?? match.home_team}</span>
-            <div className="knockout-team-tags">
-              {favoriteTeam?.code === homeTeam?.code ? <Badge label="Favorite" tone="gold" /> : null}
-              {lowerRatedTeam?.code === homeTeam?.code ? <Badge label="Underdog" tone="muted" /> : null}
-            </div>
           </div>
           <div className="knockout-modal-score">
             <div className="knockout-modal-scoreline">{formatMatchScore(match) ?? "VS"}</div>
@@ -150,13 +142,9 @@ export default function KnockoutMatchDetailsModal({
             {match.penalties ? <div className="knockout-modal-note knockout-modal-note-pens">Decided on penalties: {match.penalties.home}-{match.penalties.away}</div> : null}
           </div>
           <div className={`knockout-modal-team ${winnerCode === match.away_team ? "winner" : ""} ${winnerCode && winnerCode !== match.away_team ? "loser" : ""}`}>
-            <TeamFlag code={awayTeam?.code ?? match.away_team} size="lg" alt={`${awayTeam?.name ?? match.away_team} flag`} />
+            <TeamFlag code={awayTeam?.code ?? match.away_team} size="hero" alt={`${awayTeam?.name ?? match.away_team} flag`} />
             <strong>{awayTeam?.name ?? match.away_team}</strong>
             <span>{awayTeam?.code ?? match.away_team}</span>
-            <div className="knockout-team-tags">
-              {favoriteTeam?.code === awayTeam?.code ? <Badge label="Favorite" tone="gold" /> : null}
-              {lowerRatedTeam?.code === awayTeam?.code ? <Badge label="Underdog" tone="muted" /> : null}
-            </div>
           </div>
         </div>
         <div className="knockout-modal-divider" />

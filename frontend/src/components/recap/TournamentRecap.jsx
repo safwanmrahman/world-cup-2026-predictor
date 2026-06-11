@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import TeamFlag from "../shared/TeamFlag";
 import EmptyState from "../shared/EmptyState";
 import { BallIcon, BootIcon, CalendarIcon, ChartIcon, FireIcon, RouteIcon, ShieldIcon, TrophyIcon } from "../shared/Icons";
-import { formatDecimal, formatWholeNumber } from "../../utils/formattingUtils";
+import { formatDecimal, formatMatchScore, formatWholeNumber } from "../../utils/formattingUtils";
 import { deriveTournamentRecapData } from "../../utils/simulationUtils";
 
 export default function TournamentRecap({
@@ -13,6 +13,7 @@ export default function TournamentRecap({
   title,
   subtitle,
   recapLabel,
+  showHighlightUpset = true,
   extraContent = null,
 }) {
   const recap = useMemo(
@@ -73,6 +74,22 @@ export default function TournamentRecap({
       tone: "shield",
     },
     {
+      label: "Dark Horse",
+      value: recap.darkHorse?.team ? (
+        <span className="recap-inline-team-list recap-highlight-team-list">
+          <span className="recap-inline-team recap-highlight-team">
+            <TeamFlag code={recap.darkHorse.team.code} size="sm" alt={`${recap.darkHorse.team.name} flag`} />
+            {recap.darkHorse.team.name}
+          </span>
+        </span>
+      ) : "--",
+      detail: recap.darkHorse?.team
+        ? `${recap.darkHorse.stage} · FIFA #${recap.darkHorse.team.fifa_ranking ?? "--"}`
+        : "No non-big team knockout run yet",
+      icon: <RouteIcon />,
+      tone: "gold",
+    },
+    ...(showHighlightUpset ? [{
       label: "Biggest Upset",
       value: recap.biggestUpset ? (
         <span className="recap-inline-team-list recap-highlight-team-list">
@@ -90,7 +107,7 @@ export default function TournamentRecap({
       detail: recap.biggestUpset ? `${recap.biggestUpset.upsetLabel} · ${recap.biggestUpset.rankingSwing} ranking places lower` : "No knockout upset yet",
       icon: <FireIcon />,
       tone: "fire",
-    },
+    }] : []),
   ];
 
   return (
@@ -104,20 +121,20 @@ export default function TournamentRecap({
         <section className="recap-hero">
           <article className="recap-podium-card recap-podium-side">
             <div className="recap-podium-label">Runner-up</div>
-            <TeamFlag code={recap.runnerUp.code} size="xl" alt={`${recap.runnerUp.name} flag`} />
+            <TeamFlag code={recap.runnerUp.code} size="hero" alt={`${recap.runnerUp.name} flag`} />
             <strong>{recap.runnerUp.name}</strong>
             <span>{recap.runnerUp.code}</span>
           </article>
           <article className="recap-podium-card recap-podium-champion">
             <div className="recap-podium-label">Champion</div>
             <div className="recap-podium-crown"><TrophyIcon /></div>
-            <TeamFlag code={recap.champion.code} size="xl" alt={`${recap.champion.name} flag`} />
+            <TeamFlag code={recap.champion.code} size="hero" alt={`${recap.champion.name} flag`} />
             <strong>{recap.champion.name}</strong>
             <span>{recap.champion.code}</span>
           </article>
           <article className="recap-podium-card recap-podium-side">
             <div className="recap-podium-label">3rd Place</div>
-            <TeamFlag code={recap.thirdPlace.code} size="xl" alt={`${recap.thirdPlace.name} flag`} />
+            <TeamFlag code={recap.thirdPlace.code} size="hero" alt={`${recap.thirdPlace.name} flag`} />
             <strong>{recap.thirdPlace.name}</strong>
             <span>{recap.thirdPlace.code}</span>
           </article>
@@ -198,15 +215,15 @@ export default function TournamentRecap({
           <div className="section-kicker">Stats</div>
           <h3 className="recap-card-title">Tournament Stats</h3>
           <div className="recap-stat-list">
-            <div className="recap-stat-tile"><div className="recap-stat-icon"><CalendarIcon /></div><div className="recap-stat-copy"><span>Matches Completed</span><strong>{recap.completedMatches}</strong></div></div>
-            <div className="recap-stat-tile"><div className="recap-stat-icon"><BallIcon /></div><div className="recap-stat-copy"><span>Average Goals</span><strong>{recap.averageGoals != null ? formatDecimal(recap.averageGoals) : "--"}</strong></div></div>
             <div className="recap-stat-tile"><div className="recap-stat-icon"><ChartIcon /></div><div className="recap-stat-copy"><span>Total Goals</span><strong>{formatWholeNumber(recap.totalGoals)}</strong></div></div>
+            <div className="recap-stat-tile"><div className="recap-stat-icon"><BallIcon /></div><div className="recap-stat-copy"><span>Avg Goals</span><strong>{recap.averageGoals != null ? formatDecimal(recap.averageGoals) : "--"}</strong></div></div>
             <div className="recap-stat-tile recap-stat-team-tile"><div className="recap-stat-icon"><TrophyIcon /></div><div className="recap-stat-copy"><span>Champion</span>{recap.champion ? <strong className="recap-inline-team"><TeamFlag code={recap.champion.code} size="sm" alt={`${recap.champion.name} flag`} />{recap.champion.name}</strong> : <strong>--</strong>}</div></div>
             <div className="recap-stat-tile recap-stat-team-tile"><div className="recap-stat-icon"><RouteIcon /></div><div className="recap-stat-copy"><span>Runner-up</span>{recap.runnerUp ? <strong className="recap-inline-team"><TeamFlag code={recap.runnerUp.code} size="sm" alt={`${recap.runnerUp.name} flag`} />{recap.runnerUp.name}</strong> : <strong>--</strong>}</div></div>
+            <div className="recap-stat-tile recap-stat-team-tile"><div className="recap-stat-icon"><BootIcon /></div><div className="recap-stat-copy"><span>Best Attack</span>{recap.topScorers.length ? <strong className="recap-inline-team-list">{recap.topScorers.map((team) => <span className="recap-inline-team" key={team.code}><TeamFlag code={team.code} size="sm" alt={`${team.name} flag`} />{team.name}</span>)}</strong> : <strong>--</strong>}</div></div>
             <div className="recap-stat-tile recap-stat-team-tile"><div className="recap-stat-icon"><ShieldIcon /></div><div className="recap-stat-copy"><span>Best Defense</span>{recap.bestDefenseTeams.length ? <strong className="recap-inline-team-list">{recap.bestDefenseTeams.map((team) => <span className="recap-inline-team" key={team.code}><TeamFlag code={team.code} size="sm" alt={`${team.name} flag`} />{team.name}</span>)}</strong> : <strong>--</strong>}</div></div>
           </div>
         </section>
-        <section className="recap-card">
+        <section className="recap-card recap-upset-watch-card">
           <div className="section-kicker">Upset Watch</div>
           <h3 className="recap-card-title">Biggest Upset</h3>
           {recap.biggestUpset ? (
@@ -218,6 +235,17 @@ export default function TournamentRecap({
                 <span className="recap-inline-team"><TeamFlag code={recap.biggestUpset.loser.code} size="sm" alt={`${recap.biggestUpset.loser.name} flag`} />{recap.biggestUpset.loser.name}</span>
                 in the {recap.biggestUpset.match.round}
               </span>
+              <div className="recap-upset-scoreline">
+                <span className="recap-inline-team">
+                  <TeamFlag code={recap.biggestUpset.match.home_team} size="sm" alt={`${getTeam(recap.biggestUpset.match.home_team)?.name ?? recap.biggestUpset.match.home_team} flag`} />
+                  {getTeam(recap.biggestUpset.match.home_team)?.name ?? recap.biggestUpset.match.home_team}
+                </span>
+                <span className="recap-upset-score">{formatMatchScore(recap.biggestUpset.match) ?? "--"}</span>
+                <span className="recap-inline-team">
+                  <TeamFlag code={recap.biggestUpset.match.away_team} size="sm" alt={`${getTeam(recap.biggestUpset.match.away_team)?.name ?? recap.biggestUpset.match.away_team} flag`} />
+                  {getTeam(recap.biggestUpset.match.away_team)?.name ?? recap.biggestUpset.match.away_team}
+                </span>
+              </div>
               <small>{recap.biggestUpset.upsetLabel} · {recap.biggestUpset.rankingSwing} ranking places lower</small>
             </div>
           ) : <EmptyState>No knockout upset yet.</EmptyState>}

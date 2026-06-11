@@ -64,6 +64,7 @@ export default function TournamentSummaryCards({
         icon={<BootIcon />}
         value={formatMetricValue(bestAttackValue, bestAttackMode)}
         detail={bestAttackMode === "average" ? "Avg goals scored" : "Goals scored"}
+        inlineSupport
       >
         <TeamChips teams={bestAttackTeams} />
       </StatCard>
@@ -73,6 +74,7 @@ export default function TournamentSummaryCards({
         icon={<ShieldIcon />}
         value={formatMetricValue(bestDefenseValue, bestDefenseMode)}
         detail={bestDefenseMode === "average" ? "Avg goals allowed" : "Goals allowed"}
+        inlineSupport
       >
         <TeamChips teams={bestDefenseTeams} />
       </StatCard>

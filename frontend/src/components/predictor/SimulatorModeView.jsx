@@ -6,7 +6,9 @@ import ThirdPlaceAdvancers from "../groups/ThirdPlaceAdvancers";
 import KnockoutBracket from "../knockout/KnockoutBracket";
 import TournamentRecap from "../recap/TournamentRecap";
 import PodiumSection from "../recap/PodiumSection";
+import TournamentStatsPanel from "../recap/TournamentStatsPanel";
 import TournamentTabs from "./TournamentTabs";
+import { deriveTournamentTeamStats } from "../../utils/simulationUtils";
 
 export default function SimulatorModeView(props) {
   const {
@@ -51,6 +53,7 @@ export default function SimulatorModeView(props) {
     handleOpenKnockoutDetails,
     teams,
   } = props;
+  const simulatorTeamStats = deriveTournamentTeamStats(sampleTournament, thirdPlaceMatch, teams, getTeam);
 
   return (
     <>
@@ -108,8 +111,6 @@ export default function SimulatorModeView(props) {
 
       {activeSimulatorTab === "knockout" ? (
         <section className="surface-card full-span bracket-section tab-panel recap-fade-in">
-          <div className="section-kicker">KNOCKOUT STAGE</div>
-          <h2 className="section-title bracket-section-title">Knockout Stage</h2>
           {sampleTournament ? (
             <KnockoutBracket
               bracket={sampleTournament.bracket}
@@ -139,7 +140,14 @@ export default function SimulatorModeView(props) {
             recapLabel="SIMULATOR RECAP"
             title="Tournament Recap"
             subtitle="A full tournament wrap-up with podium results, stats, standout performances, and the biggest knockout surprise."
+            showHighlightUpset={false}
           />
+        </div>
+      ) : null}
+
+      {activeSimulatorTab === "stats" ? (
+        <div className="tab-panel recap-fade-in">
+          <TournamentStatsPanel stats={simulatorTeamStats} />
         </div>
       ) : null}
     </>

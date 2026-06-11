@@ -7,6 +7,8 @@ import KnockoutBracket from "../knockout/KnockoutBracket";
 import { ManualKnockoutMatchCard } from "../knockout/KnockoutMatchCard";
 import TournamentRecap from "../recap/TournamentRecap";
 import PodiumSection from "../recap/PodiumSection";
+import TournamentStatsPanel from "../recap/TournamentStatsPanel";
+import { deriveTournamentTeamStats } from "../../utils/simulationUtils";
 
 export default function PredictorModeView(props) {
   const {
@@ -38,6 +40,7 @@ export default function PredictorModeView(props) {
   const championTeam = manualTournament?.champion ? getTeam(manualTournament.champion) : null;
   const runnerUpTeam = manualTournament?.runnerUp ? getTeam(manualTournament.runnerUp) : null;
   const thirdPlaceTeam = manualTournament?.thirdPlace ? getTeam(manualTournament.thirdPlace) : null;
+  const predictorTeamStats = deriveTournamentTeamStats(manualTournament, manualTournament?.thirdPlaceMatch, teams, getTeam);
 
   return (
     <>
@@ -83,8 +86,6 @@ export default function PredictorModeView(props) {
 
       {activeManualTab === "knockout" ? (
         <section className="surface-card full-span bracket-section manual-bracket-section tab-panel recap-fade-in">
-          <div className="section-kicker">MY BRACKET</div>
-          <h2 className="section-title bracket-section-title">Knockout Stage</h2>
           {manualTournament ? (
             <KnockoutBracket
               bracket={manualTournament.bracket}
@@ -131,6 +132,12 @@ export default function PredictorModeView(props) {
             title="Bracket Recap"
             subtitle="A full look at your current bracket story, including the podium, standout performers, and the path your tournament took."
           />
+        </div>
+      ) : null}
+
+      {activeManualTab === "stats" ? (
+        <div className="tab-panel recap-fade-in">
+          <TournamentStatsPanel stats={predictorTeamStats} />
         </div>
       ) : null}
     </>

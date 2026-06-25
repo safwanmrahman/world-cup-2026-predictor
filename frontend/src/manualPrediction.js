@@ -282,6 +282,21 @@ function buildPenaltyShootout(selectedHome = true) {
     : { home: 5, away: 6 };
 }
 
+function forcePenaltyScoresForWinner(penaltiesHome, penaltiesAway, winnerShouldBeHome) {
+  const parsedHome = parseScore(penaltiesHome);
+  const parsedAway = parseScore(penaltiesAway);
+
+  if (parsedHome != null && parsedAway != null && parsedHome !== parsedAway) {
+    if ((winnerShouldBeHome && parsedHome > parsedAway) || (!winnerShouldBeHome && parsedAway > parsedHome)) {
+      return { home: parsedHome, away: parsedAway };
+    }
+
+    return { home: parsedAway, away: parsedHome };
+  }
+
+  return buildPenaltyShootout(winnerShouldBeHome);
+}
+
 function flipScore(score) {
   return {
     ...score,
@@ -419,19 +434,13 @@ function normalizeQuickPickKnockoutResult(match, generated, selectedOutcome) {
 
   normalized.resultType = "PENS";
   const winnerShouldBeHome = selectedWinner === match.home_team;
-  const penaltiesHome = parseScore(normalized.penaltiesHome);
-  const penaltiesAway = parseScore(normalized.penaltiesAway);
-  const penaltiesConflict =
-    penaltiesHome == null
-    || penaltiesAway == null
-    || penaltiesHome === penaltiesAway
-    || (winnerShouldBeHome ? penaltiesHome <= penaltiesAway : penaltiesAway <= penaltiesHome);
-
-  if (penaltiesConflict) {
-    const regeneratedPenalties = buildPenaltyShootout(winnerShouldBeHome);
-    normalized.penaltiesHome = regeneratedPenalties.home;
-    normalized.penaltiesAway = regeneratedPenalties.away;
-  }
+  const enforcedPenalties = forcePenaltyScoresForWinner(
+    normalized.penaltiesHome,
+    normalized.penaltiesAway,
+    winnerShouldBeHome,
+  );
+  normalized.penaltiesHome = enforcedPenalties.home;
+  normalized.penaltiesAway = enforcedPenalties.away;
 
   return normalized;
 }
@@ -1239,20 +1248,16 @@ export function updateKnockoutMatch(state, match, patch) {
           ? "teamB"
           : nextEntry.selectedOutcome;
     nextEntry.resultType = normalizeResultType(nextEntry.resultType);
-    if (patch.advancedTeamId && nextEntry.resultType === "PENS") {
-      const currentHomePens = parseScore(nextEntry.penaltiesHome);
-      const currentAwayPens = parseScore(nextEntry.penaltiesAway);
-      const winnerShouldBeHome = patch.advancedTeamId === match.home_team;
-      const penaltiesConflict =
-        currentHomePens != null
-        && currentAwayPens != null
-        && ((winnerShouldBeHome && currentHomePens <= currentAwayPens)
-          || (!winnerShouldBeHome && currentAwayPens <= currentHomePens));
-
-      if (currentHomePens == null || currentAwayPens == null || penaltiesConflict) {
-        nextEntry.penaltiesHome = winnerShouldBeHome ? "4" : "3";
-        nextEntry.penaltiesAway = winnerShouldBeHome ? "3" : "4";
-      }
+    if (preservedWinner) {
+      const winnerShouldBeHome = preservedWinner === match.home_team;
+      const enforcedPenalties = forcePenaltyScoresForWinner(
+        nextEntry.penaltiesHome,
+        nextEntry.penaltiesAway,
+        winnerShouldBeHome,
+      );
+      nextEntry.penaltiesHome = String(enforcedPenalties.home);
+      nextEntry.penaltiesAway = String(enforcedPenalties.away);
+      nextEntry.resultType = "PENS";
     }
     const resolvedPenaltiesHome = parseScore(nextEntry.penaltiesHome);
     const resolvedPenaltiesAway = parseScore(nextEntry.penaltiesAway);

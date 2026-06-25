@@ -6,6 +6,22 @@ import { validateScoreInput } from "../../manualPrediction";
 import { formatMatchScore } from "../../utils/formattingUtils";
 import { getKnockoutWinnerCode } from "../../utils/knockoutUtils";
 
+function KnockoutCardHoverTooltip({ visible, x, y }) {
+  if (!visible) {
+    return null;
+  }
+
+  return (
+    <span
+      className="knockout-hover-tooltip"
+      style={{ left: `${x}px`, top: `${y}px` }}
+      aria-hidden="true"
+    >
+      Click to View Match Details
+    </span>
+  );
+}
+
 function getManualKnockoutCardBadges(match) {
   const badges = [];
   if (match.source === "quick-pick-generated-score") {
@@ -31,6 +47,8 @@ export function KnockoutMatchCard({
   onTeamLeave,
   onTeamPin,
 }) {
+  const [tooltipState, setTooltipState] = useState({ visible: false, x: 0, y: 0 });
+
   if (!match) {
     return <div className="bracket-placeholder">Match pending</div>;
   }
@@ -52,12 +70,33 @@ export function KnockoutMatchCard({
     && match.penalties.home !== match.penalties.away
     ? `Pens ${match.penalties.home}-${match.penalties.away}`
     : null;
+  const detailsLabel = `Open match details for ${home?.name ?? match.home_team} vs ${away?.name ?? match.away_team}`;
+
+  function handleTooltipMove(event) {
+    if (!onOpenDetails) {
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltipState({
+      visible: true,
+      x: event.clientX - rect.left + 16,
+      y: event.clientY - rect.top + 18,
+    });
+  }
+
+  function handleMouseLeave() {
+    setTooltipState((current) => (current.visible ? { ...current, visible: false } : current));
+    onTeamLeave?.();
+  }
 
   return (
     <div
       className={`bracket-match-card knockout-card-shell ${isRouteHighlighted && !isPinnedRoute ? "route-highlighted" : ""} ${isHoveredRoute ? "route-hovered" : ""} ${isPinnedRoute ? "route-selected" : ""} ${className}`.trim()}
       onClick={() => onOpenDetails?.(match)}
-      onMouseLeave={() => onTeamLeave?.()}
+      onMouseEnter={handleTooltipMove}
+      onMouseMove={handleTooltipMove}
+      onMouseLeave={handleMouseLeave}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
@@ -66,6 +105,7 @@ export function KnockoutMatchCard({
       }}
       tabIndex={onOpenDetails ? 0 : -1}
       role={onOpenDetails ? "button" : undefined}
+      aria-label={onOpenDetails ? detailsLabel : undefined}
     >
       <div
         className={`bracket-team-row ${winnerCode === match.home_team ? "winner" : ""} ${highlightedTeamCode === match.home_team && !homePinned ? "route-team-highlighted" : ""} ${homeHovered ? "route-team-hovered" : ""} ${homePinned ? "route-team-selected" : ""}`}
@@ -90,17 +130,7 @@ export function KnockoutMatchCard({
         {"away_goals" in match ? <strong>{match.away_goals}</strong> : <span className="score-empty">-</span>}
       </div>
       {penaltyScore ? <div className="bracket-penalty-note">{penaltyScore}</div> : null}
-      {onOpenDetails ? (
-        <Button
-          className="knockout-details-trigger"
-          onClick={(event) => {
-            event.stopPropagation();
-            onOpenDetails(match);
-          }}
-        >
-          View Match Details
-        </Button>
-      ) : null}
+      <KnockoutCardHoverTooltip {...tooltipState} />
     </div>
   );
 }
@@ -119,6 +149,7 @@ export function ManualKnockoutMatchCard({
   onTeamPin,
 }) {
   const [editingSide, setEditingSide] = useState(null);
+  const [tooltipState, setTooltipState] = useState({ visible: false, x: 0, y: 0 });
 
   useEffect(() => {
     setEditingSide(null);
@@ -152,6 +183,25 @@ export function ManualKnockoutMatchCard({
     : winnerCode === match.away_team
       ? away?.name ?? match.away_team
       : null;
+  const detailsLabel = `Open match details for ${home?.name ?? match.home_team} vs ${away?.name ?? match.away_team}`;
+
+  function handleTooltipMove(event) {
+    if (!onOpenDetails) {
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltipState({
+      visible: true,
+      x: event.clientX - rect.left + 16,
+      y: event.clientY - rect.top + 18,
+    });
+  }
+
+  function handleMouseLeave() {
+    setTooltipState((current) => (current.visible ? { ...current, visible: false } : current));
+    onTeamLeave?.();
+  }
 
   function renderEditableScore(side) {
     const scoreValue = side === "home" ? match.home_goals : match.away_goals;
@@ -172,6 +222,7 @@ export function ManualKnockoutMatchCard({
           onChange={(event) => onMatchChange?.(match, { [patchKey]: validateScoreInput(event.target.value) })}
           onBlur={() => setEditingSide(null)}
           onKeyDown={(event) => {
+            event.stopPropagation();
             if (event.key === "Enter" || event.key === "Escape") {
               event.currentTarget.blur();
             }
@@ -188,6 +239,9 @@ export function ManualKnockoutMatchCard({
           event.stopPropagation();
           setEditingSide(side);
         }}
+        onKeyDown={(event) => {
+          event.stopPropagation();
+        }}
         aria-label={`Edit ${side === "home" ? home?.name ?? match.home_team : away?.name ?? match.away_team} score`}
       >
         {scoreValue ?? "-"}
@@ -198,7 +252,19 @@ export function ManualKnockoutMatchCard({
   return (
     <div
       className={`bracket-match-card manual-bracket-card knockout-card-shell ${isRouteHighlighted && !isPinnedRoute ? "route-highlighted" : ""} ${isHoveredRoute ? "route-hovered" : ""} ${isPinnedRoute ? "route-selected" : ""} ${match.className ?? ""}`.trim()}
-      onMouseLeave={() => onTeamLeave?.()}
+      onClick={() => onOpenDetails?.(match)}
+      onMouseEnter={handleTooltipMove}
+      onMouseMove={handleTooltipMove}
+      onMouseLeave={handleMouseLeave}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpenDetails?.(match);
+        }
+      }}
+      tabIndex={onOpenDetails ? 0 : -1}
+      role={onOpenDetails ? "button" : undefined}
+      aria-label={onOpenDetails ? detailsLabel : undefined}
     >
       <div className="manual-bracket-head">
         <div className="badge-row manual-bracket-badges">
@@ -206,27 +272,19 @@ export function ManualKnockoutMatchCard({
             <Badge key={`${match.match_id}-${badge.label}`} label={badge.label} tone={badge.tone} />
           )) : <Badge label="Pending" tone="muted" />}
         </div>
-        <Button
-          className="knockout-details-trigger manual-details-trigger"
-          onClick={(event) => {
-            event.stopPropagation();
-            onOpenDetails?.(match);
-          }}
-          aria-label="Open match details"
-        >
-          Details
-        </Button>
       </div>
       <div
         className={`bracket-team-row ${winnerCode === match.home_team ? "winner" : ""} ${highlightedTeamCode === match.home_team && !homePinned ? "route-team-highlighted" : ""} ${homeHovered ? "route-team-hovered" : ""} ${homePinned ? "route-team-selected" : ""}`}
         onMouseEnter={() => onTeamHover?.(match.home_team)}
-        onClick={() => {
+        onClick={(event) => {
+          event.stopPropagation();
           onTeamPin?.(match.home_team);
           onQuickPick?.(match, "teamA");
         }}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
+            event.stopPropagation();
             onTeamPin?.(match.home_team);
             onQuickPick?.(match, "teamA");
           }
@@ -244,13 +302,15 @@ export function ManualKnockoutMatchCard({
       <div
         className={`bracket-team-row ${winnerCode === match.away_team ? "winner" : ""} ${highlightedTeamCode === match.away_team && !awayPinned ? "route-team-highlighted" : ""} ${awayHovered ? "route-team-hovered" : ""} ${awayPinned ? "route-team-selected" : ""}`}
         onMouseEnter={() => onTeamHover?.(match.away_team)}
-        onClick={() => {
+        onClick={(event) => {
+          event.stopPropagation();
           onTeamPin?.(match.away_team);
           onQuickPick?.(match, "teamB");
         }}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
+            event.stopPropagation();
             onTeamPin?.(match.away_team);
             onQuickPick?.(match, "teamB");
           }
@@ -272,7 +332,11 @@ export function ManualKnockoutMatchCard({
           {tiedAfterNinety && advancingTeamName && !penaltyNote ? <span className="manual-bracket-pens-note">{advancingTeamName} advance</span> : null}
         </div>
         {tiedAfterNinety ? (
-          <div className="manual-inline-advance-picker" onClick={(event) => event.stopPropagation()}>
+          <div
+            className="manual-inline-advance-picker"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
             <span className="manual-inline-advance-label">Advances</span>
             <div className="manual-inline-advance-actions">
               <Button
@@ -294,6 +358,7 @@ export function ManualKnockoutMatchCard({
           {tiedAfterNinety ? <span className="manual-result-placeholder">Use details for penalty scores</span> : null}
         </div>
       </div>
+      <KnockoutCardHoverTooltip {...tooltipState} />
     </div>
   );
 }

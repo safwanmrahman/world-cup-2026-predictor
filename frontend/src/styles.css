@@ -3815,6 +3815,28 @@ table {
   grid-template-rows: auto auto 1fr;
 }
 
+.recap-showcase-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.recap-showcase-item {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  min-width: 0;
+}
+
+.recap-showcase-title {
+  margin: 8px 0 0;
+  font-size: 1.28rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .recap-stats-panel {
   display: grid;
   gap: 12px;
@@ -4134,6 +4156,19 @@ table {
 }
 
 .recap-upset-editorial-slight .recap-award-icon {
+  background: rgba(217, 164, 65, 0.12);
+  color: var(--accent-primary);
+}
+
+.recap-game-editorial {
+  background:
+    linear-gradient(135deg, rgba(217, 164, 65, 0.14), rgba(77, 109, 193, 0.08) 58%, transparent),
+    var(--bg-secondary);
+  border-color: rgba(217, 164, 65, 0.18);
+  min-height: 100%;
+}
+
+.recap-game-editorial .recap-award-icon {
   background: rgba(217, 164, 65, 0.12);
   color: var(--accent-primary);
 }
@@ -4763,6 +4798,7 @@ table {
   .third-place-selector,
   .recap-highlight-grid,
   .recap-grid,
+  .recap-showcase-grid,
   .recap-awards,
   .recap-semifinal-results,
   .recap-bottom-grid {

@@ -224,31 +224,75 @@ export default function TournamentRecap({
           </div>
         </section>
         <section className="recap-card recap-upset-watch-card">
-          <div className="section-kicker">Upset Watch</div>
-          <h3 className="recap-card-title">Biggest Upset</h3>
-          {recap.biggestUpset ? (
-            <div className={`recap-upset recap-upset-editorial recap-upset-editorial-${recap.biggestUpset.upsetType}`}>
-              <div className="recap-award-icon"><FireIcon /></div>
-              <strong className="recap-inline-team"><TeamFlag code={recap.biggestUpset.winner.code} size="sm" alt={`${recap.biggestUpset.winner.name} flag`} />{recap.biggestUpset.winner.name}</strong>
-              <span className="recap-upset-copy recap-upset-line">
-                {recap.biggestUpset.winner.name} beat
-                <span className="recap-inline-team"><TeamFlag code={recap.biggestUpset.loser.code} size="sm" alt={`${recap.biggestUpset.loser.name} flag`} />{recap.biggestUpset.loser.name}</span>
-                in the {recap.biggestUpset.match.round}
-              </span>
-              <div className="recap-upset-scoreline">
-                <span className="recap-inline-team">
-                  <TeamFlag code={recap.biggestUpset.match.home_team} size="sm" alt={`${getTeam(recap.biggestUpset.match.home_team)?.name ?? recap.biggestUpset.match.home_team} flag`} />
-                  {getTeam(recap.biggestUpset.match.home_team)?.name ?? recap.biggestUpset.match.home_team}
-                </span>
-                <span className="recap-upset-score">{formatMatchScore(recap.biggestUpset.match) ?? "--"}</span>
-                <span className="recap-inline-team">
-                  <TeamFlag code={recap.biggestUpset.match.away_team} size="sm" alt={`${getTeam(recap.biggestUpset.match.away_team)?.name ?? recap.biggestUpset.match.away_team} flag`} />
-                  {getTeam(recap.biggestUpset.match.away_team)?.name ?? recap.biggestUpset.match.away_team}
-                </span>
-              </div>
-              <small>{recap.biggestUpset.upsetLabel} · {recap.biggestUpset.rankingSwing} ranking places lower</small>
-            </div>
-          ) : <EmptyState>No knockout upset yet.</EmptyState>}
+          <div className="section-kicker">Match Highlights</div>
+          <h3 className="recap-card-title">Signature Games</h3>
+          <div className="recap-showcase-grid">
+            <article className="recap-showcase-item">
+              <div className="section-kicker">Upset Watch</div>
+              <h4 className="recap-showcase-title">Biggest Upset</h4>
+              {recap.biggestUpset ? (
+                <div className={`recap-upset recap-upset-editorial recap-upset-editorial-${recap.biggestUpset.upsetType}`}>
+                  <div className="recap-award-icon"><FireIcon /></div>
+                  <strong className="recap-inline-team"><TeamFlag code={recap.biggestUpset.winner.code} size="sm" alt={`${recap.biggestUpset.winner.name} flag`} />{recap.biggestUpset.winner.name}</strong>
+                  <span className="recap-upset-copy recap-upset-line">
+                    {recap.biggestUpset.winner.name} beat
+                    <span className="recap-inline-team"><TeamFlag code={recap.biggestUpset.loser.code} size="sm" alt={`${recap.biggestUpset.loser.name} flag`} />{recap.biggestUpset.loser.name}</span>
+                    in the {recap.biggestUpset.match.round}
+                  </span>
+                  <div className="recap-upset-scoreline">
+                    <span className="recap-inline-team">
+                      <TeamFlag code={recap.biggestUpset.match.home_team} size="sm" alt={`${getTeam(recap.biggestUpset.match.home_team)?.name ?? recap.biggestUpset.match.home_team} flag`} />
+                      {getTeam(recap.biggestUpset.match.home_team)?.name ?? recap.biggestUpset.match.home_team}
+                    </span>
+                    <span className="recap-upset-score">{formatMatchScore(recap.biggestUpset.match) ?? "--"}</span>
+                    <span className="recap-inline-team">
+                      <TeamFlag code={recap.biggestUpset.match.away_team} size="sm" alt={`${getTeam(recap.biggestUpset.match.away_team)?.name ?? recap.biggestUpset.match.away_team} flag`} />
+                      {getTeam(recap.biggestUpset.match.away_team)?.name ?? recap.biggestUpset.match.away_team}
+                    </span>
+                  </div>
+                  <small>{recap.biggestUpset.upsetLabel} · {recap.biggestUpset.rankingSwing} ranking places lower</small>
+                </div>
+              ) : <EmptyState>No knockout upset yet.</EmptyState>}
+            </article>
+            <article className="recap-showcase-item">
+              <div className="section-kicker">Showpiece Match</div>
+              <h4 className="recap-showcase-title">Game of the Tournament</h4>
+              {recap.gameOfTournament ? (
+                <div className="recap-upset recap-upset-editorial recap-game-editorial">
+                  <div className="recap-award-icon"><TrophyIcon /></div>
+                  <strong className="recap-inline-team-list">
+                    <span className="recap-inline-team">
+                      <TeamFlag code={recap.gameOfTournament.match.home_team} size="sm" alt={`${getTeam(recap.gameOfTournament.match.home_team)?.name ?? recap.gameOfTournament.match.home_team} flag`} />
+                      {getTeam(recap.gameOfTournament.match.home_team)?.name ?? recap.gameOfTournament.match.home_team}
+                    </span>
+                    <span className="recap-highlight-versus">vs</span>
+                    <span className="recap-inline-team">
+                      <TeamFlag code={recap.gameOfTournament.match.away_team} size="sm" alt={`${getTeam(recap.gameOfTournament.match.away_team)?.name ?? recap.gameOfTournament.match.away_team} flag`} />
+                      {getTeam(recap.gameOfTournament.match.away_team)?.name ?? recap.gameOfTournament.match.away_team}
+                    </span>
+                  </strong>
+                  <span className="recap-upset-line">{recap.gameOfTournament.reason}</span>
+                  <div className="recap-upset-scoreline">
+                    <span className="recap-inline-team">
+                      <TeamFlag code={recap.gameOfTournament.match.home_team} size="sm" alt={`${getTeam(recap.gameOfTournament.match.home_team)?.name ?? recap.gameOfTournament.match.home_team} flag`} />
+                      {getTeam(recap.gameOfTournament.match.home_team)?.name ?? recap.gameOfTournament.match.home_team}
+                    </span>
+                    <span className="recap-upset-score">{recap.gameOfTournament.match.home_goals} - {recap.gameOfTournament.match.away_goals}</span>
+                    <span className="recap-inline-team">
+                      <TeamFlag code={recap.gameOfTournament.match.away_team} size="sm" alt={`${getTeam(recap.gameOfTournament.match.away_team)?.name ?? recap.gameOfTournament.match.away_team} flag`} />
+                      {getTeam(recap.gameOfTournament.match.away_team)?.name ?? recap.gameOfTournament.match.away_team}
+                    </span>
+                  </div>
+                  <small>
+                    {recap.gameOfTournament.match.round}
+                    {recap.gameOfTournament.wentToPenalties && recap.gameOfTournament.match.penalties
+                      ? ` · Pens ${recap.gameOfTournament.match.penalties.home}-${recap.gameOfTournament.match.penalties.away}`
+                      : ""}
+                  </small>
+                </div>
+              ) : <EmptyState>No completed standout match yet.</EmptyState>}
+            </article>
+          </div>
         </section>
       </div>
       <div className="recap-bottom-grid">

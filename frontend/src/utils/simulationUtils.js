@@ -18,10 +18,12 @@ const RECAP_BIG_TEAM_CODES = new Set([
 ]);
 
 const RECAP_UPSET_ROUND_PRIORITY = {
+  "Group Stage": 0,
   "Round of 32": 1,
   "Round of 16": 2,
   Quarterfinals: 3,
   Semifinals: 4,
+  "Third Place": 4,
   Final: 5,
 };
 
@@ -160,6 +162,89 @@ function selectDarkHorse(tournament, thirdPlaceMatch, getTeam) {
     team: getTeam(winner.code),
     stage: winner.stage,
   };
+}
+
+function buildGameOfTournamentCandidate(match, getTeam) {
+  if (!isCompleteMatch(match)) {
+    return null;
+  }
+
+  const totalGoals = (match.home_goals ?? 0) + (match.away_goals ?? 0);
+  const isKnockout = match.round !== "Group Stage";
+  const tiedMatch = match.home_goals === match.away_goals;
+  const highScoringTiedKnockout =
+    isKnockout
+    && tiedMatch
+    && match.home_goals >= 2
+    && match.away_goals >= 2;
+  const wentToPenalties =
+    tiedMatch
+    && match.penalties?.home != null
+    && match.penalties?.away != null
+    && match.penalties.home !== match.penalties.away;
+  const winnerCode = getKnockoutWinnerCode(match);
+  const loserCode = getKnockoutLoserCode(match);
+  const winner = winnerCode ? getTeam(winnerCode) : null;
+  const loser = loserCode ? getTeam(loserCode) : null;
+  const upset = winner && loser ? getUpsetClassification(winner, loser) : { type: "none", gap: 0, label: "" };
+  const upsetBonus = upset.type !== "none" ? 3 : 0;
+  const roundPriority = RECAP_UPSET_ROUND_PRIORITY[match.round] ?? 0;
+  const excitementScore =
+    totalGoals
+    + (wentToPenalties ? 4 : 0)
+    + (highScoringTiedKnockout ? 2 : 0)
+    + upsetBonus
+    + roundPriority;
+
+  return {
+    match,
+    winner,
+    loser,
+    upset,
+    roundPriority,
+    totalGoals,
+    wentToPenalties,
+    tiedKnockoutMatch: highScoringTiedKnockout,
+    excitementScore,
+  };
+}
+
+function compareGameOfTournamentCandidates(left, right) {
+  return (
+    left.excitementScore - right.excitementScore
+    || left.roundPriority - right.roundPriority
+    || left.totalGoals - right.totalGoals
+    || Number(left.wentToPenalties) - Number(right.wentToPenalties)
+    || (left.upset.gap ?? 0) - (right.upset.gap ?? 0)
+  );
+}
+
+function describeGameOfTournament(candidate) {
+  if (!candidate) {
+    return "Awaiting a standout match.";
+  }
+
+  if (candidate.match.round === "Final") {
+    return "Final classic";
+  }
+
+  if (candidate.wentToPenalties) {
+    return `Penalty thriller in the ${candidate.match.round}`;
+  }
+
+  if (candidate.upset.type !== "none") {
+    return `Massive upset in the ${candidate.match.round}`;
+  }
+
+  if (candidate.totalGoals >= 7 && candidate.match.round !== "Group Stage") {
+    return `${candidate.totalGoals}-goal knockout classic`;
+  }
+
+  if (candidate.totalGoals >= 7) {
+    return `${candidate.totalGoals}-goal classic`;
+  }
+
+  return `High-drama ${candidate.match.round.toLowerCase()}`;
 }
 
 function formatChampionPathScore(match, championCode) {
@@ -592,6 +677,13 @@ export function deriveTournamentRecapData(tournament, thirdPlaceMatch, teams, ge
   const biggestUpset = majorBigTeamUpsetCandidates.length
     ? selectBestCandidate(majorBigTeamUpsetCandidates, compareMajorBigTeamUpsetCandidates)
     : selectBestCandidate(upsetCandidates, compareGenericUpsetCandidates);
+  const gameOfTournamentCandidate = selectBestCandidate(
+    allMatches
+      .filter(isCompleteMatch)
+      .map((match) => buildGameOfTournamentCandidate(match, getTeam))
+      .filter(Boolean),
+    compareGameOfTournamentCandidates,
+  );
 
   const finalMatch = tournament.bracket?.final?.[0] ?? null;
   const championCode = getKnockoutWinnerCode(finalMatch) ?? tournament.champion ?? null;
@@ -645,6 +737,12 @@ export function deriveTournamentRecapData(tournament, thirdPlaceMatch, teams, ge
     minConceded,
     darkHorse,
     biggestUpset,
+    gameOfTournament: gameOfTournamentCandidate
+      ? {
+          ...gameOfTournamentCandidate,
+          reason: describeGameOfTournament(gameOfTournamentCandidate),
+        }
+      : null,
     championGoals,
     championGoalsAgainst,
     semifinalResults,

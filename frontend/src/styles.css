@@ -1884,7 +1884,7 @@ table {
   min-width: 0;
 }
 
-.bracket-team-meta span {
+.bracket-team-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3143,9 +3143,45 @@ table {
 }
 
 .manual-bracket-card .bracket-team-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 32px;
+  align-items: center;
+  column-gap: 8px;
   min-height: 42px;
+  width: 100%;
+  max-width: 100%;
   padding: 9px 10px 9px 12px;
   border-radius: 12px;
+  overflow: hidden;
+}
+
+.manual-bracket-card .bracket-team-meta {
+  display: contents;
+}
+
+.manual-bracket-card .bracket-team-name {
+  grid-column: 2;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manual-bracket-card .bracket-team-row .flag-shell {
+  grid-column: 1;
+  justify-self: start;
+}
+
+.manual-bracket-card .bracket-team-row strong,
+.manual-bracket-card .bracket-team-row .score-empty,
+.manual-bracket-card .bracket-team-row .bracket-score-trigger,
+.manual-bracket-card .bracket-team-row .bracket-score-input {
+  grid-column: 3;
+  justify-self: end;
+  width: 32px;
+  text-align: right;
 }
 
 .manual-bracket-foot {

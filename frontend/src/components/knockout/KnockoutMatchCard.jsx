@@ -114,7 +114,7 @@ export function KnockoutMatchCard({
       >
         <div className="bracket-team-meta">
           <TeamFlag code={match.home_team} size="sm" alt={`${home?.name ?? match.home_team} flag`} />
-          <span>{home?.name ?? match.home_team}</span>
+          <span className="bracket-team-name">{home?.name ?? match.home_team}</span>
         </div>
         {"home_goals" in match ? <strong>{match.home_goals}</strong> : <span className="score-empty">-</span>}
       </div>
@@ -125,7 +125,7 @@ export function KnockoutMatchCard({
       >
         <div className="bracket-team-meta">
           <TeamFlag code={match.away_team} size="sm" alt={`${away?.name ?? match.away_team} flag`} />
-          <span>{away?.name ?? match.away_team}</span>
+          <span className="bracket-team-name">{away?.name ?? match.away_team}</span>
         </div>
         {"away_goals" in match ? <strong>{match.away_goals}</strong> : <span className="score-empty">-</span>}
       </div>
@@ -295,7 +295,7 @@ export function ManualKnockoutMatchCard({
       >
         <div className="bracket-team-meta">
           <TeamFlag code={match.home_team} size="sm" alt={`${home?.name ?? match.home_team} flag`} />
-          <span>{home?.name ?? match.home_team}</span>
+          <span className="bracket-team-name">{home?.name ?? match.home_team}</span>
         </div>
         {renderEditableScore("home")}
       </div>
@@ -321,7 +321,7 @@ export function ManualKnockoutMatchCard({
       >
         <div className="bracket-team-meta">
           <TeamFlag code={match.away_team} size="sm" alt={`${away?.name ?? match.away_team} flag`} />
-          <span>{away?.name ?? match.away_team}</span>
+          <span className="bracket-team-name">{away?.name ?? match.away_team}</span>
         </div>
         {renderEditableScore("away")}
       </div>

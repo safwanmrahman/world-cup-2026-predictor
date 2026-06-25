@@ -269,15 +269,17 @@ function simulatePenaltyShootoutAttempt(selectedHome) {
   return null;
 }
 
-function buildPenaltyShootout() {
+function buildPenaltyShootout(selectedHome = true) {
   for (let attempt = 0; attempt < 24; attempt += 1) {
-    const result = simulatePenaltyShootoutAttempt(true);
+    const result = simulatePenaltyShootoutAttempt(selectedHome);
     if (result) {
       return result;
     }
   }
 
-  return { home: 6, away: 5 };
+  return selectedHome
+    ? { home: 6, away: 5 }
+    : { home: 5, away: 6 };
 }
 
 function flipScore(score) {
@@ -363,14 +365,13 @@ export function generateRealisticScore(teamA, teamB, selectedOutcome, stage) {
       { value: { scoreA: 2, scoreB: 2 }, weight: 22 },
       { value: { scoreA: 3, scoreB: 3 }, weight: 4 },
     ]);
-    const penalties = buildPenaltyShootout();
-    const result = {
+    const penalties = buildPenaltyShootout(selectedHome);
+    return {
       ...tieScore,
       resultType: "PENS",
       penaltiesHome: penalties.home,
       penaltiesAway: penalties.away,
     };
-    return selectedHome ? result : flipScore(result);
   }
 
   const regular = weightedPick(regularWinTemplates);
@@ -382,6 +383,57 @@ export function generateRealisticScore(teamA, teamB, selectedOutcome, stage) {
   };
 
   return selectedHome ? result : flipScore(result);
+}
+
+function selectedKnockoutWinnerCode(match, selectedOutcome) {
+  if (selectedOutcome === "teamA") {
+    return match.home_team;
+  }
+
+  if (selectedOutcome === "teamB") {
+    return match.away_team;
+  }
+
+  return null;
+}
+
+function normalizeQuickPickKnockoutResult(match, generated, selectedOutcome) {
+  const selectedWinner = selectedKnockoutWinnerCode(match, selectedOutcome);
+
+  if (!selectedWinner) {
+    return generated;
+  }
+
+  const normalized = {
+    ...generated,
+    penaltiesHome: generated.penaltiesHome ?? null,
+    penaltiesAway: generated.penaltiesAway ?? null,
+  };
+
+  if (normalized.scoreA !== normalized.scoreB) {
+    normalized.resultType = "REGULAR";
+    normalized.penaltiesHome = null;
+    normalized.penaltiesAway = null;
+    return normalized;
+  }
+
+  normalized.resultType = "PENS";
+  const winnerShouldBeHome = selectedWinner === match.home_team;
+  const penaltiesHome = parseScore(normalized.penaltiesHome);
+  const penaltiesAway = parseScore(normalized.penaltiesAway);
+  const penaltiesConflict =
+    penaltiesHome == null
+    || penaltiesAway == null
+    || penaltiesHome === penaltiesAway
+    || (winnerShouldBeHome ? penaltiesHome <= penaltiesAway : penaltiesAway <= penaltiesHome);
+
+  if (penaltiesConflict) {
+    const regeneratedPenalties = buildPenaltyShootout(winnerShouldBeHome);
+    normalized.penaltiesHome = regeneratedPenalties.home;
+    normalized.penaltiesAway = regeneratedPenalties.away;
+  }
+
+  return normalized;
 }
 
 function createDefaultGroupScoreState() {
@@ -1271,12 +1323,17 @@ export function quickPickKnockoutMatch(state, match, teamsByCode, selectedOutcom
     ...(state.knockoutMatches[match.match_id] ?? {}),
   };
   const previousWinner = getSavedKnockoutWinnerCode(match, previousEntry);
-  const generated = generateRealisticScore(
-    teamsByCode[match.home_team],
-    teamsByCode[match.away_team],
+  const generated = normalizeQuickPickKnockoutResult(
+    match,
+    generateRealisticScore(
+      teamsByCode[match.home_team],
+      teamsByCode[match.away_team],
+      selectedOutcome,
+      "knockout",
+    ),
     selectedOutcome,
-    "knockout",
   );
+  const selectedWinner = selectedKnockoutWinnerCode(match, selectedOutcome);
   const advancedTeamId = deriveKnockoutWinner(
     match.home_team,
     match.away_team,
@@ -1284,7 +1341,7 @@ export function quickPickKnockoutMatch(state, match, teamsByCode, selectedOutcom
     generated.scoreB,
     generated.penaltiesHome,
     generated.penaltiesAway,
-    selectedOutcome === "teamA" ? match.home_team : match.away_team,
+    selectedWinner,
   );
   const nextEntry = stampKnockoutEntryTeams({
     homeGoals: String(generated.scoreA),

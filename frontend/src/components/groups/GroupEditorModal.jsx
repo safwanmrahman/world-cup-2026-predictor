@@ -1,29 +1,8 @@
 import { GROUP_MATCHDAY_LABELS } from "../../manualPrediction";
-import Badge from "../shared/Badge";
 import Button from "../shared/Button";
 import Modal from "../shared/Modal";
 import StandingsTable from "./StandingsTable";
 import GroupMatchRow from "./GroupMatchRow";
-
-function getManualMatchStatus(match, stage) {
-  const labels = [];
-  if (match.source === "quick-pick-generated-score") {
-    labels.push({ label: "Quick Pick", tone: "gold" });
-    labels.push({ label: "Generated Score", tone: "muted" });
-  } else if (match.source === "manual-score") {
-    labels.push({ label: "Manual Score", tone: "green" });
-  }
-
-  if (match.selected_outcome === "draw" && stage === "group") {
-    labels.push({ label: "Draw", tone: "muted" });
-  }
-
-  if (match.result_type === "PENS") {
-    labels.push({ label: "Pens", tone: "gold" });
-  }
-
-  return labels;
-}
 
 export default function GroupEditorModal({
   group,
@@ -41,11 +20,16 @@ export default function GroupEditorModal({
     return null;
   }
 
+  const groupedMatches = GROUP_MATCHDAY_LABELS.map((label, index) => ({
+    label,
+    matches: (group.matches ?? []).slice(index * 2, index * 2 + 2),
+  }));
+
   return (
     <Modal isOpen={Boolean(group)} onClose={onClose} className="group-modal manual-group-modal">
       <div className="modal-header">
         <div className="section-kicker">{group.name.toUpperCase()}</div>
-        <h3>{group.name} Editor</h3>
+        <h3>{group.name}</h3>
       </div>
 
       <div className="modal-section">
@@ -61,18 +45,23 @@ export default function GroupEditorModal({
       <div className="modal-section manual-group-section">
         <div className="manual-subheading">
           <span>Click-to-pick Matches</span>
-          <Badge label={`${group.completedMatches}/${group.totalMatches} picked`} tone={group.isComplete ? "green" : "muted"} />
         </div>
         <div className="manual-group-fixtures">
-          {(group.matches ?? []).map((match) => (
-            <GroupMatchRow
-              key={match.match_id}
-              match={match}
-              getTeam={getTeam}
-              onScoreChange={onScoreChange}
-              onQuickPick={onQuickPick}
-              labels={getManualMatchStatus(match, "group")}
-            />
+          {groupedMatches.map((matchday) => (
+            <div className="matchday-block" key={matchday.label}>
+              <div className="matchday-label">{matchday.label}</div>
+              <div className="fixture-list">
+                {matchday.matches.map((match) => (
+                  <GroupMatchRow
+                    key={match.match_id}
+                    match={match}
+                    getTeam={getTeam}
+                    onScoreChange={onScoreChange}
+                    onQuickPick={onQuickPick}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>

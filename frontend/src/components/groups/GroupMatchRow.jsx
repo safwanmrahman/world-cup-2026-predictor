@@ -1,6 +1,5 @@
 import Button from "../shared/Button";
 import TeamFlag from "../shared/TeamFlag";
-import Badge from "../shared/Badge";
 import { validateScoreInput } from "../../manualPrediction";
 
 export function ManualGroupScoreInput({ value, onChange }) {
@@ -31,19 +30,12 @@ export function TeamRow({ teamCode, teamName, emphasized, dimmed, score, winner,
   );
 }
 
-export default function GroupMatchRow({ match, getTeam, onScoreChange, onQuickPick, labels = [] }) {
+export default function GroupMatchRow({ match, getTeam, onScoreChange, onQuickPick }) {
   const home = getTeam(match.home_team);
   const away = getTeam(match.away_team);
 
   return (
     <div className="manual-group-fixture-card">
-      {labels.length ? (
-        <div className="badge-row manual-match-badges">
-          {labels.map((badge) => (
-            <Badge key={`${match.match_id}-${badge.label}`} label={badge.label} tone={badge.tone} />
-          ))}
-        </div>
-      ) : null}
       <div className="manual-group-fixture">
         <Button className={`manual-pick-button ${match.selected_outcome === "teamA" ? "active" : ""}`} onClick={() => onQuickPick(match, "teamA")}>
           <TeamFlag code={match.home_team} size="sm" alt={`${home?.name ?? match.home_team} flag`} />

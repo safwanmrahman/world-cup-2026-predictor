@@ -1043,12 +1043,9 @@ export function buildManualTournament(state, groups, fixtures, teamsByCode) {
     teamsByCode,
     state.groupOverrides,
   );
-  const allGroupsComplete = groupResults.every((group) => group.isComplete);
-  const placements = allGroupsComplete ? groupPlacements(groupResults) : {};
-  const selectedThirdPlaces = allGroupsComplete
-    ? normalizeSelectedThirdPlaces(groupResults, state.selectedThirdPlaceTeams)
-    : [];
-  const thirdPlaceSlots = allGroupsComplete ? resolveThirdPlaceSlots(selectedThirdPlaces) : {};
+  const placements = groupPlacements(groupResults);
+  const selectedThirdPlaces = normalizeSelectedThirdPlaces(groupResults, state.selectedThirdPlaceTeams);
+  const thirdPlaceSlots = resolveThirdPlaceSlots(selectedThirdPlaces);
   const roundOf32 = ROUND_OF_32_TEMPLATE.map((template) =>
     hydrateMatchState(
       createBaseMatch(template, placements, thirdPlaceSlots),
@@ -1079,12 +1076,11 @@ export function buildManualTournament(state, groups, fixtures, teamsByCode) {
     groupResults.map((group) => [
       group.name,
       {
-        first: group.isComplete ? group.table[0]?.team_code ?? null : null,
-        second: group.isComplete ? group.table[1]?.team_code ?? null : null,
-        third: group.isComplete ? group.table[2]?.team_code ?? null : null,
+        first: group.table[0]?.team_code ?? null,
+        second: group.table[1]?.team_code ?? null,
+        third: group.table[2]?.team_code ?? null,
         thirdPlaceAdvanced:
-          allGroupsComplete
-          && selectedThirdPlaces.some((team) => team.team_code === group.table[2]?.team_code),
+          selectedThirdPlaces.some((team) => team.team_code === group.table[2]?.team_code),
       },
     ]),
   );
@@ -1097,12 +1093,8 @@ export function buildManualTournament(state, groups, fixtures, teamsByCode) {
     placements,
     groupAdvancers,
     qualifiedForRoundOf32: [
-      ...(allGroupsComplete
-        ? [
-            ...groupResults.flatMap((group) => group.table.slice(0, 2).map((row) => row.team_code)),
-            ...selectedThirdPlaces.map((team) => team.team_code),
-          ]
-        : []),
+      ...groupResults.flatMap((group) => group.table.slice(0, 2).map((row) => row.team_code)),
+      ...selectedThirdPlaces.map((team) => team.team_code),
     ],
     bracket: {
       round_of_32: roundOf32,
@@ -1137,6 +1129,28 @@ export function applyGroupOverride(groupName, currentOrder, teamCode, direction,
   }
 
   [order[index], order[nextIndex]] = [order[nextIndex], order[index]];
+  return {
+    ...existingOverrides,
+    [groupName]: order,
+  };
+}
+
+export function reorderGroupOverride(groupName, currentOrder, draggedTeamCode, targetTeamCode, existingOverrides) {
+  const order = [...(existingOverrides[groupName]?.length ? existingOverrides[groupName] : currentOrder)];
+  const draggedIndex = order.indexOf(draggedTeamCode);
+  const targetIndex = order.indexOf(targetTeamCode);
+
+  if (
+    draggedIndex < 0
+    || targetIndex < 0
+    || draggedTeamCode === targetTeamCode
+  ) {
+    return existingOverrides;
+  }
+
+  order.splice(draggedIndex, 1);
+  order.splice(targetIndex, 0, draggedTeamCode);
+
   return {
     ...existingOverrides,
     [groupName]: order,

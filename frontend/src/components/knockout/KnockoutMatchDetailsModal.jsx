@@ -10,7 +10,6 @@ import {
   getTeamPreviousKnockoutMatch,
 } from "../../utils/knockoutUtils";
 import Modal from "../shared/Modal";
-import Badge from "../shared/Badge";
 import Button from "../shared/Button";
 import TeamFlag from "../shared/TeamFlag";
 import { FireIcon } from "../shared/Icons";
@@ -26,20 +25,6 @@ function ManualScoreInput({ value, onChange }) {
       onChange={(event) => onChange(validateScoreInput(event.target.value))}
     />
   );
-}
-
-function getManualMatchStatus(match) {
-  const labels = [];
-  if (match.source === "quick-pick-generated-score") {
-    labels.push({ label: "Quick Pick", tone: "gold" });
-    labels.push({ label: "Generated Score", tone: "muted" });
-  } else if (match.source === "manual-score") {
-    labels.push({ label: "Manual Score", tone: "green" });
-  }
-  if (match.result_type === "PENS") {
-    labels.push({ label: "Pens", tone: "gold" });
-  }
-  return labels;
 }
 
 export default function KnockoutMatchDetailsModal({
@@ -94,7 +79,6 @@ export default function KnockoutMatchDetailsModal({
   const winner = winnerCode ? getTeam(winnerCode) : null;
   const upset = getKnockoutUpset(match, getTeam);
   const resultIndicators = getKnockoutResultIndicators(match, getTeam);
-  const currentPickLabel = winnerCode ? `${winner?.name ?? winnerCode} selected` : "Awaiting pick";
   const homePrevious = getTeamPreviousKnockoutMatch(matchPool ?? [], match.round, match.home_team);
   const awayPrevious = getTeamPreviousKnockoutMatch(matchPool ?? [], match.round, match.away_team);
   const homePreviousOpponent = homePrevious ? getTeam(getKnockoutMatchOpponent(homePrevious, match.home_team)) : null;
@@ -102,7 +86,6 @@ export default function KnockoutMatchDetailsModal({
   const homeAdvanceProbability = probabilityData?.probabilities.home_advance ?? null;
   const awayAdvanceProbability = probabilityData?.probabilities.away_advance ?? null;
   const tieAfterNinety = match.home_goals != null && match.away_goals != null && match.home_goals === match.away_goals;
-  const manualStatusLabels = mode === "manual" ? getManualMatchStatus(match) : [];
   const indicatorCopyByType = {
     shocker: (indicator) => (
       mode === "simulator"
@@ -138,8 +121,6 @@ export default function KnockoutMatchDetailsModal({
           </div>
           <div className="knockout-modal-score">
             <div className="knockout-modal-scoreline">{formatMatchScore(match) ?? "VS"}</div>
-            {winner ? <div className="knockout-modal-winner-banner">{winner.name} advance</div> : null}
-            {match.penalties ? <div className="knockout-modal-note knockout-modal-note-pens">Decided on penalties: {match.penalties.home}-{match.penalties.away}</div> : null}
           </div>
           <div className={`knockout-modal-team ${winnerCode === match.away_team ? "winner" : ""} ${winnerCode && winnerCode !== match.away_team ? "loser" : ""}`}>
             <TeamFlag code={awayTeam?.code ?? match.away_team} size="hero" alt={`${awayTeam?.name ?? match.away_team} flag`} />
@@ -174,7 +155,6 @@ export default function KnockoutMatchDetailsModal({
           </div>
           {mode === "simulator" ? (
             <>
-              <div className="knockout-status-line"><strong>Winner:</strong> {winner?.name ?? "Pending"}</div>
               {upset.type !== "none" ? (
                 <div className={`knockout-upset-indicator knockout-upset-indicator-${upset.type}`}>
                   <FireIcon />
@@ -190,7 +170,6 @@ export default function KnockoutMatchDetailsModal({
             </>
           ) : (
             <>
-              <div className="knockout-status-line"><strong>Current Pick:</strong> {currentPickLabel}</div>
               {upset.type !== "none" ? (
                 <div className={`knockout-upset-indicator knockout-upset-indicator-${upset.type}`}>
                   <FireIcon />
@@ -205,9 +184,6 @@ export default function KnockoutMatchDetailsModal({
               ))}
               <div className="knockout-editor-panel">
                 <div className="section-kicker">Edit Prediction</div>
-                <div className="knockout-editor-status">
-                  {manualStatusLabels.length ? manualStatusLabels.map((badge) => <Badge key={`${match.match_id}-${badge.label}`} label={badge.label} tone={badge.tone} />) : <Badge label="Awaiting Pick" tone="muted" />}
-                </div>
                 <div className="knockout-modal-actions">
                   <Button className={winnerCode === match.home_team ? "button-primary" : "button-secondary"} onClick={() => onPickWinner?.(match, "teamA")}>Pick {homeTeam?.name ?? "Team A"}</Button>
                   <Button className={winnerCode === match.away_team ? "button-primary" : "button-secondary"} onClick={() => onPickWinner?.(match, "teamB")}>Pick {awayTeam?.name ?? "Team B"}</Button>

@@ -2,10 +2,10 @@ import TeamFlag from "../shared/TeamFlag";
 
 export default function ThirdPlaceAdvancers({ title, description, teams = [], getTeam }) {
   return (
-    <section className="surface-card full-span">
+    <section className="surface-card full-span third-place-section">
       <div className="section-kicker">THIRD-PLACE ADVANCERS</div>
       <h2 className="section-title">{title}</h2>
-      <p className="empty-message">{description}</p>
+      <p className="third-place-description">{description}</p>
       <div className="third-place-selector">
         {teams.map((team) => {
           const resolvedTeam = getTeam(team.team_code);

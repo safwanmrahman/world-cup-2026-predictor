@@ -3,7 +3,6 @@ import Badge from "../shared/Badge";
 import Button from "../shared/Button";
 import TeamFlag from "../shared/TeamFlag";
 import { validateScoreInput } from "../../manualPrediction";
-import { formatMatchScore } from "../../utils/formattingUtils";
 import { getKnockoutWinnerCode } from "../../utils/knockoutUtils";
 
 function KnockoutCardHoverTooltip({ visible, x, y }) {
@@ -24,14 +23,6 @@ function KnockoutCardHoverTooltip({ visible, x, y }) {
 
 function getManualKnockoutCardBadges(match) {
   const badges = [];
-  if (match.source === "quick-pick-generated-score") {
-    badges.push({ label: "Auto", tone: "gold" });
-  } else if (match.source === "manual-score") {
-    badges.push({ label: "Manual", tone: "green" });
-  }
-  if (match.result_type === "PENS") {
-    badges.push({ label: "Pens", tone: "muted" });
-  }
   return badges;
 }
 
@@ -170,7 +161,6 @@ export function ManualKnockoutMatchCard({
   const awayHovered = hoveredTeamCode === match.away_team;
   const homePinned = pinnedTeamCode === match.home_team;
   const awayPinned = pinnedTeamCode === match.away_team;
-  const matchScore = formatMatchScore(match);
   const tiedAfterNinety = match.home_goals != null && match.away_goals != null && match.home_goals === match.away_goals;
   const penaltyNote = tiedAfterNinety
     && match.penalties?.home != null
@@ -178,11 +168,6 @@ export function ManualKnockoutMatchCard({
     && match.penalties.home !== match.penalties.away
     ? `Pens ${match.penalties.home}-${match.penalties.away}`
     : null;
-  const advancingTeamName = winnerCode === match.home_team
-    ? home?.name ?? match.home_team
-    : winnerCode === match.away_team
-      ? away?.name ?? match.away_team
-      : null;
   const detailsLabel = `Open match details for ${home?.name ?? match.home_team} vs ${away?.name ?? match.away_team}`;
 
   function handleTooltipMove(event) {
@@ -266,13 +251,15 @@ export function ManualKnockoutMatchCard({
       role={onOpenDetails ? "button" : undefined}
       aria-label={onOpenDetails ? detailsLabel : undefined}
     >
-      <div className="manual-bracket-head">
-        <div className="badge-row manual-bracket-badges">
-          {statusLabels.length ? statusLabels.map((badge) => (
-            <Badge key={`${match.match_id}-${badge.label}`} label={badge.label} tone={badge.tone} />
-          )) : <Badge label="Pending" tone="muted" />}
+      {statusLabels.length ? (
+        <div className="manual-bracket-head">
+          <div className="badge-row manual-bracket-badges">
+            {statusLabels.map((badge) => (
+              <Badge key={`${match.match_id}-${badge.label}`} label={badge.label} tone={badge.tone} />
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
       <div
         className={`bracket-team-row ${winnerCode === match.home_team ? "winner" : ""} ${highlightedTeamCode === match.home_team && !homePinned ? "route-team-highlighted" : ""} ${homeHovered ? "route-team-hovered" : ""} ${homePinned ? "route-team-selected" : ""}`}
         onMouseEnter={() => onTeamHover?.(match.home_team)}
@@ -325,39 +312,35 @@ export function ManualKnockoutMatchCard({
         </div>
         {renderEditableScore("away")}
       </div>
-      <div className="manual-bracket-foot">
-        <div className="manual-bracket-summary">
-          {matchScore ? <span className="manual-result-note">{matchScore}</span> : <span className="manual-result-placeholder">Click score to edit</span>}
-          {penaltyNote ? <span className="manual-bracket-pens-note">{penaltyNote}</span> : null}
-          {tiedAfterNinety && advancingTeamName && !penaltyNote ? <span className="manual-bracket-pens-note">{advancingTeamName} advance</span> : null}
-        </div>
-        {tiedAfterNinety ? (
-          <div
-            className="manual-inline-advance-picker"
-            onClick={(event) => event.stopPropagation()}
-            onKeyDown={(event) => event.stopPropagation()}
-          >
-            <span className="manual-inline-advance-label">Advances</span>
-            <div className="manual-inline-advance-actions">
-              <Button
-                className={winnerCode === match.home_team ? "button-primary manual-inline-advance-button" : "button-secondary manual-inline-advance-button"}
-                onClick={() => onMatchChange?.(match, { advancedTeamId: match.home_team })}
-              >
-                {home?.code ?? match.home_team}
-              </Button>
-              <Button
-                className={winnerCode === match.away_team ? "button-primary manual-inline-advance-button" : "button-secondary manual-inline-advance-button"}
-                onClick={() => onMatchChange?.(match, { advancedTeamId: match.away_team })}
-              >
-                {away?.code ?? match.away_team}
-              </Button>
-            </div>
+      {penaltyNote || tiedAfterNinety ? (
+        <div className="manual-bracket-foot">
+          <div className="manual-bracket-summary">
+            {penaltyNote ? <span className="manual-bracket-pens-note">{penaltyNote}</span> : null}
           </div>
-        ) : null}
-        <div className="manual-bracket-actions">
-          {tiedAfterNinety ? <span className="manual-result-placeholder">Use details for penalty scores</span> : null}
+          {tiedAfterNinety ? (
+            <div
+              className="manual-inline-advance-picker"
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+            >
+              <div className="manual-inline-advance-actions">
+                <Button
+                  className={winnerCode === match.home_team ? "button-primary manual-inline-advance-button" : "button-secondary manual-inline-advance-button"}
+                  onClick={() => onMatchChange?.(match, { advancedTeamId: match.home_team })}
+                >
+                  {home?.code ?? match.home_team}
+                </Button>
+                <Button
+                  className={winnerCode === match.away_team ? "button-primary manual-inline-advance-button" : "button-secondary manual-inline-advance-button"}
+                  onClick={() => onMatchChange?.(match, { advancedTeamId: match.away_team })}
+                >
+                  {away?.code ?? match.away_team}
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </div>
-      </div>
+      ) : null}
       <KnockoutCardHoverTooltip {...tooltipState} />
     </div>
   );

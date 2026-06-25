@@ -7,6 +7,7 @@ export default function GroupStage({
   getTeam,
   qualifiedCodes,
   onOpenGroup,
+  onReorderGroup,
   onGroupKeyDown,
   loading = false,
   isManual = false,
@@ -18,7 +19,7 @@ export default function GroupStage({
       {loading ? (
         <EmptyState>Loading group data...</EmptyState>
       ) : (
-        <div className={`groups-grid ${isManual ? "manual-groups-grid" : ""}`}>
+        <div className="groups-grid">
           {groups.map((group) => (
             <GroupCard
               key={group.name}
@@ -26,6 +27,7 @@ export default function GroupStage({
               getTeam={getTeam}
               qualifiedCodes={qualifiedCodes}
               onOpen={onOpenGroup}
+              onReorderGroup={onReorderGroup}
               isManual={isManual}
               onKeyDown={onGroupKeyDown}
             />

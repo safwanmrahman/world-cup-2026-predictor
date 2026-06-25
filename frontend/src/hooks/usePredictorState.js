@@ -10,6 +10,7 @@ import {
   loadManualPredictionState,
   quickPickGroupMatch,
   quickPickKnockoutMatch,
+  reorderGroupOverride,
   resetManualGroups,
   resetManualKnockouts,
   resetManualPrediction,
@@ -112,6 +113,21 @@ export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleT
   function handleClearGroupOverride(groupName) {
     setManualSaved(false);
     setManualPredictionState((current) => clearGroupOverride(current, groupName));
+  }
+
+  function handleReorderGroup(groupName, currentOrder, draggedTeamCode, targetTeamCode) {
+    setManualSaved(false);
+    setManualPredictionState((current) => ({
+      ...current,
+      groupOverrides: reorderGroupOverride(
+        groupName,
+        currentOrder,
+        draggedTeamCode,
+        targetTeamCode,
+        current.groupOverrides,
+      ),
+      updatedAt: Date.now(),
+    }));
   }
 
   function handleThirdPlaceToggle(teamCode) {
@@ -287,6 +303,7 @@ export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleT
     handleManualGroupScoreChange,
     handleManualGroupQuickPick,
     handleMoveGroupOverride,
+    handleReorderGroup,
     handleClearGroupOverride,
     handleThirdPlaceToggle,
     handleKnockoutMatchChange,

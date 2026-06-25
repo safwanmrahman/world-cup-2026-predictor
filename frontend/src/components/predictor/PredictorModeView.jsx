@@ -19,6 +19,7 @@ export default function PredictorModeView(props) {
     getTeam,
     manualQualifiedCodes,
     openManualGroupEditor,
+    handleReorderGroup,
     thirdPlaceDescription,
     activeBracketHighlightTeamCode,
     hoveredBracketTeamCode,
@@ -69,11 +70,12 @@ export default function PredictorModeView(props) {
       {activeManualTab === "groups" ? (
         <div className="tab-panel recap-fade-in">
           <GroupStage
-            title="Group Stage"
+            title="Tables"
             groups={manualTournament?.groupResults ?? []}
             getTeam={getTeam}
             qualifiedCodes={manualQualifiedCodes}
             onOpenGroup={(group) => openManualGroupEditor(group.name)}
+            onReorderGroup={handleReorderGroup}
             onGroupKeyDown={(event, group) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();

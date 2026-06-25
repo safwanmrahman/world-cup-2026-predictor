@@ -102,7 +102,6 @@ function App() {
       onAutofill: predictor.handleAutoFillRemaining,
       onResetGroups: () => predictor.handleOpenResetConfirmation("groups"),
       onResetKnockouts: () => predictor.handleOpenResetConfirmation("knockouts"),
-      onFullReset: () => predictor.handleOpenResetConfirmation("full"),
     },
     activeManualTab: predictor.activeManualTab,
     setActiveManualTab: predictor.setActiveManualTab,

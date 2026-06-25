@@ -8,7 +8,7 @@ import { ManualKnockoutMatchCard } from "../knockout/KnockoutMatchCard";
 import TournamentRecap from "../recap/TournamentRecap";
 import PodiumSection from "../recap/PodiumSection";
 import TournamentStatsPanel from "../recap/TournamentStatsPanel";
-import { deriveTournamentTeamStats } from "../../utils/simulationUtils";
+import { deriveTournamentRanking, deriveTournamentTeamStats } from "../../utils/simulationUtils";
 
 export default function PredictorModeView(props) {
   const {
@@ -41,6 +41,13 @@ export default function PredictorModeView(props) {
   const runnerUpTeam = manualTournament?.runnerUp ? getTeam(manualTournament.runnerUp) : null;
   const thirdPlaceTeam = manualTournament?.thirdPlace ? getTeam(manualTournament.thirdPlace) : null;
   const predictorTeamStats = deriveTournamentTeamStats(manualTournament, manualTournament?.thirdPlaceMatch, teams, getTeam);
+  const predictorTournamentRanking = deriveTournamentRanking(
+    manualTournament,
+    manualTournament?.thirdPlaceMatch,
+    teams,
+    getTeam,
+    predictorTeamStats,
+  );
 
   return (
     <>
@@ -131,13 +138,14 @@ export default function PredictorModeView(props) {
             recapLabel="PREDICTOR RECAP"
             title="Bracket Recap"
             subtitle="A full look at your current bracket story, including the podium, standout performers, and the path your tournament took."
+            showHighlightUpset={false}
           />
         </div>
       ) : null}
 
       {activeManualTab === "stats" ? (
         <div className="tab-panel recap-fade-in">
-          <TournamentStatsPanel stats={predictorTeamStats} />
+          <TournamentStatsPanel stats={predictorTeamStats} ranking={predictorTournamentRanking} />
         </div>
       ) : null}
     </>

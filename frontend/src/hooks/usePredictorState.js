@@ -174,15 +174,12 @@ export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleT
     if (pendingResetAction === "groups") {
       setManualPredictionState((current) => resetManualGroups(current));
       setShareStatus("Group stage reset");
+      switchManualToGroups();
     } else if (pendingResetAction === "knockouts") {
       setManualPredictionState((current) => resetManualKnockouts(current));
       setShareStatus("Knockout stage reset");
-    } else if (pendingResetAction === "full") {
-      setManualPredictionState(resetManualPrediction(groups, fixtures));
-      setShareStatus("Manual prediction reset");
+      switchManualToKnockout();
     }
-
-    switchManualToGroups();
     setPendingResetAction(null);
   }
 
@@ -265,17 +262,6 @@ export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleT
         "All knockout-round predictions, including third-place and final picks, will be removed.",
       ],
       confirmLabel: "Reset Knockouts",
-      confirmTone: "button-primary",
-    },
-    full: {
-      title: "Full Reset",
-      description: "Clear the entire Predictor Mode bracket and return it to the initial empty state.",
-      impacts: [
-        "All group-stage picks and scores will be removed.",
-        "All knockout predictions and winners will be removed.",
-        "The bracket will return to a fresh, empty prediction state.",
-      ],
-      confirmLabel: "Full Reset",
       confirmTone: "button-primary",
     },
   }[pendingResetAction];

@@ -286,6 +286,71 @@ function getRoundOf16QualifiedTeamCodes(tournament) {
     .filter(Boolean);
 }
 
+function compareStatsByTournamentPoints(left, right) {
+  return (
+    right.points - left.points
+    || right.goalDifference - left.goalDifference
+    || right.totalGoalsScored - left.totalGoalsScored
+    || left.totalGoalsConceded - right.totalGoalsConceded
+    || left.team.name.localeCompare(right.team.name)
+  );
+}
+
+function buildEmptyTeamStatsEntry(team) {
+  return {
+    code: team.code,
+    team,
+    matchesPlayed: 0,
+    wins: 0,
+    draws: 0,
+    losses: 0,
+    points: 0,
+    totalGoalsScored: 0,
+    totalGoalsConceded: 0,
+    goalDifference: 0,
+    cleanSheets: 0,
+    averageGoalsScored: 0,
+    averageGoalsConceded: 0,
+    record: "0-0-0",
+  };
+}
+
+function getStatsEntryForCode(code, statsByCode, teams, getTeam) {
+  if (!code) {
+    return null;
+  }
+
+  const existing = statsByCode.get(code);
+  if (existing) {
+    return existing;
+  }
+
+  const team = getTeam(code) ?? teams.find((entry) => entry.code === code) ?? null;
+  return team ? buildEmptyTeamStatsEntry(team) : null;
+}
+
+function getMatchLosers(matches = []) {
+  return matches
+    .map((match) => getKnockoutLoserCode(match))
+    .filter(Boolean);
+}
+
+function buildTournamentRankingBand(codes, finishLabel, statsByCode, teams, getTeam, assignedCodes) {
+  const uniqueCodes = Array.from(new Set(codes))
+    .filter((code) => code && !assignedCodes.has(code));
+  const entries = uniqueCodes
+    .map((code) => getStatsEntryForCode(code, statsByCode, teams, getTeam))
+    .filter(Boolean)
+    .sort(compareStatsByTournamentPoints)
+    .map((entry) => ({
+      ...entry,
+      finishLabel,
+    }));
+
+  entries.forEach((entry) => assignedCodes.add(entry.code));
+  return entries;
+}
+
 export function deriveTournamentTeamStats(tournament, thirdPlaceMatch, teams, getTeam) {
   if (!tournament) {
     return [];
@@ -380,6 +445,110 @@ export function deriveTournamentTeamStats(tournament, thirdPlaceMatch, teams, ge
         record: `${entry.wins}-${entry.draws}-${entry.losses}`,
       };
     });
+}
+
+export function deriveTournamentRanking(tournament, thirdPlaceMatch, teams, getTeam, providedStats = null) {
+  if (!tournament) {
+    return [];
+  }
+
+  const teamStats = providedStats ?? deriveTournamentTeamStats(tournament, thirdPlaceMatch, teams, getTeam);
+  const statsByCode = new Map(teamStats.map((entry) => [entry.code, entry]));
+  const assignedCodes = new Set();
+  const ranking = [];
+  const finalMatch = tournament.bracket?.final?.[0] ?? null;
+  const championCode = getKnockoutWinnerCode(finalMatch) ?? tournament.champion ?? null;
+  const runnerUpCode = getKnockoutLoserCode(finalMatch) ?? tournament.runner_up ?? tournament.runnerUp ?? null;
+  const semifinalLosers = getMatchLosers(tournament.bracket?.semifinals ?? []);
+  const thirdPlaceWinnerCode = getKnockoutWinnerCode(thirdPlaceMatch) ?? tournament.third_place ?? tournament.thirdPlace ?? null;
+  const thirdPlaceLoserCode = getKnockoutLoserCode(thirdPlaceMatch);
+
+  [
+    [championCode, "Champion"],
+    [runnerUpCode, "Runner-up"],
+  ].forEach(([code, finishLabel]) => {
+    const entry = getStatsEntryForCode(code, statsByCode, teams, getTeam);
+    if (!entry || assignedCodes.has(code)) {
+      return;
+    }
+
+    assignedCodes.add(code);
+    ranking.push({
+      ...entry,
+      finishLabel,
+    });
+  });
+
+  if (thirdPlaceWinnerCode && thirdPlaceLoserCode) {
+    [
+      [thirdPlaceWinnerCode, "3rd Place"],
+      [thirdPlaceLoserCode, "4th Place"],
+    ].forEach(([code, finishLabel]) => {
+      const entry = getStatsEntryForCode(code, statsByCode, teams, getTeam);
+      if (!entry || assignedCodes.has(code)) {
+        return;
+      }
+
+      assignedCodes.add(code);
+      ranking.push({
+        ...entry,
+        finishLabel,
+      });
+    });
+  } else {
+    ranking.push(
+      ...buildTournamentRankingBand(semifinalLosers, "Semifinalist", statsByCode, teams, getTeam, assignedCodes),
+    );
+  }
+
+  ranking.push(
+    ...buildTournamentRankingBand(
+      getMatchLosers(tournament.bracket?.quarterfinals ?? []),
+      "Quarterfinalist",
+      statsByCode,
+      teams,
+      getTeam,
+      assignedCodes,
+    ),
+    ...buildTournamentRankingBand(
+      getMatchLosers(tournament.bracket?.round_of_16 ?? []),
+      "Round of 16",
+      statsByCode,
+      teams,
+      getTeam,
+      assignedCodes,
+    ),
+    ...buildTournamentRankingBand(
+      getMatchLosers(tournament.bracket?.round_of_32 ?? []),
+      "Round of 32",
+      statsByCode,
+      teams,
+      getTeam,
+      assignedCodes,
+    ),
+  );
+
+  const knockoutParticipants = new Set(
+    [
+      ...(tournament.bracket?.round_of_32 ?? []),
+      ...(tournament.bracket?.round_of_16 ?? []),
+      ...(tournament.bracket?.quarterfinals ?? []),
+      ...(tournament.bracket?.semifinals ?? []),
+      ...(tournament.bracket?.final ?? []),
+      ...(thirdPlaceMatch ? [thirdPlaceMatch] : []),
+    ].flatMap((match) => [match?.home_team, match?.away_team]).filter(Boolean),
+  );
+  const allTeamCodes = teams.map((team) => team.code);
+  const groupStageCodes = allTeamCodes.filter((code) => !knockoutParticipants.has(code));
+
+  ranking.push(
+    ...buildTournamentRankingBand(groupStageCodes, "Group Stage", statsByCode, teams, getTeam, assignedCodes),
+  );
+
+  return ranking.map((entry, index) => ({
+    ...entry,
+    tournamentRank: index + 1,
+  }));
 }
 
 export function deriveTournamentRecapData(tournament, thirdPlaceMatch, teams, getTeam) {

@@ -21,6 +21,18 @@ const SORT_COMPARATORS = {
 
 const STAT_TABS = [
   {
+    id: "ranking",
+    label: "Tournament Ranking",
+    icon: <TrophyIcon />,
+    defaultSort: null,
+    sort: (left, right) => left.tournamentRank - right.tournamentRank,
+    columns: [
+      { key: "finishLabel", label: "Finish", render: (entry) => entry.finishLabel ?? "--" },
+      { key: "points", label: "Pts", render: (entry) => formatWholeNumber(entry.points) },
+      { key: "record", label: "W-D-L", render: (entry) => entry.record },
+    ],
+  },
+  {
     id: "points",
     label: "Points / Record",
     icon: <CalendarIcon />,
@@ -93,11 +105,12 @@ const STAT_TABS = [
   },
 ];
 
-export default function TournamentStatsPanel({ stats = [] }) {
-  const [activeTab, setActiveTab] = useState("points");
+export default function TournamentStatsPanel({ stats = [], ranking = [] }) {
+  const [activeTab, setActiveTab] = useState("ranking");
   const [columnSort, setColumnSort] = useState(null);
 
   const activeConfig = STAT_TABS.find((tab) => tab.id === activeTab) ?? STAT_TABS[0];
+  const activeEntries = activeTab === "ranking" ? ranking : stats;
 
   function handleTabChange(tabId) {
     setActiveTab(tabId);
@@ -117,7 +130,7 @@ export default function TournamentStatsPanel({ stats = [] }) {
   const effectiveSort = columnSort ?? activeConfig.defaultSort;
 
   const rankedStats = useMemo(() => {
-    const sorted = [...stats];
+    const sorted = [...activeEntries];
     if (activeConfig.sort) {
       sorted.sort(activeConfig.sort);
     } else if (effectiveSort) {
@@ -126,7 +139,7 @@ export default function TournamentStatsPanel({ stats = [] }) {
       if (comparator) sorted.sort(comparator);
     }
     return sorted;
-  }, [activeConfig, effectiveSort, stats]);
+  }, [activeConfig, activeEntries, effectiveSort]);
 
   return (
     <section className="recap-card recap-stats-panel">

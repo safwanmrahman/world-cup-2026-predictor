@@ -1,6 +1,6 @@
 {
-  "name": "World Cup 2026 Simulator",
-  "short_name": "WC 2026",
+  "name": "World Cup 2026 Predictor",
+  "short_name": "World Cup 2026 Predictor",
   "description": "Predict and simulate the 2026 FIFA World Cup with live tables, knockout brackets, and tournament outcomes.",
   "start_url": "/",
   "display": "standalone",

@@ -8,7 +8,7 @@ import TournamentRecap from "../recap/TournamentRecap";
 import PodiumSection from "../recap/PodiumSection";
 import TournamentStatsPanel from "../recap/TournamentStatsPanel";
 import TournamentTabs from "./TournamentTabs";
-import { deriveTournamentTeamStats } from "../../utils/simulationUtils";
+import { deriveTournamentRanking, deriveTournamentTeamStats } from "../../utils/simulationUtils";
 
 export default function SimulatorModeView(props) {
   const {
@@ -54,6 +54,7 @@ export default function SimulatorModeView(props) {
     teams,
   } = props;
   const simulatorTeamStats = deriveTournamentTeamStats(sampleTournament, thirdPlaceMatch, teams, getTeam);
+  const simulatorTournamentRanking = deriveTournamentRanking(sampleTournament, thirdPlaceMatch, teams, getTeam, simulatorTeamStats);
 
   return (
     <>
@@ -147,7 +148,7 @@ export default function SimulatorModeView(props) {
 
       {activeSimulatorTab === "stats" ? (
         <div className="tab-panel recap-fade-in">
-          <TournamentStatsPanel stats={simulatorTeamStats} />
+          <TournamentStatsPanel stats={simulatorTeamStats} ranking={simulatorTournamentRanking} />
         </div>
       ) : null}
     </>

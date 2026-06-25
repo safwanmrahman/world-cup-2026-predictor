@@ -10,7 +10,6 @@ export default function PredictorToolbar({
   onAutofill,
   onResetGroups,
   onResetKnockouts,
-  onFullReset,
 }) {
   return (
     <section className="surface-card manual-toolbar">
@@ -51,9 +50,6 @@ export default function PredictorToolbar({
             </Button>
             <Button className={`button-reset ${activeManualAction === "knockouts" ? "active" : ""}`} onClick={onResetKnockouts}>
               Reset Knockouts
-            </Button>
-            <Button className={`button-reset ${activeManualAction === "full" ? "active" : ""}`} onClick={onFullReset}>
-              Full Reset
             </Button>
           </div>
         </div>

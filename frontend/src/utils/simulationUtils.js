@@ -259,18 +259,6 @@ function getCompletedMatchResult(match) {
     return { homeOutcome: "loss", awayOutcome: "win" };
   }
 
-  const penaltiesHome = match.penalties?.home ?? null;
-  const penaltiesAway = match.penalties?.away ?? null;
-  if (
-    penaltiesHome != null
-    && penaltiesAway != null
-    && penaltiesHome !== penaltiesAway
-  ) {
-    return penaltiesHome > penaltiesAway
-      ? { homeOutcome: "win", awayOutcome: "loss" }
-      : { homeOutcome: "loss", awayOutcome: "win" };
-  }
-
   return { homeOutcome: "draw", awayOutcome: "draw" };
 }
 

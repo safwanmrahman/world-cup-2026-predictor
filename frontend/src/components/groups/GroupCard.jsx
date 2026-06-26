@@ -1,3 +1,5 @@
+import { useRef } from "react";
+import TeamFlag from "../shared/TeamFlag";
 import StandingsTable from "./StandingsTable";
 
 export default function GroupCard({
@@ -11,20 +13,58 @@ export default function GroupCard({
 }) {
   const isInteractive = typeof onOpen === "function";
   const isReorderable = isManual && typeof onReorderGroup === "function";
+  const allowCardOpen = isInteractive;
+  const suppressOpenUntilRef = useRef(0);
+
+  function suppressCardOpen(durationMs) {
+    suppressOpenUntilRef.current = Math.max(
+      suppressOpenUntilRef.current,
+      Date.now() + durationMs,
+    );
+  }
+
+  function handleCardOpen(event) {
+    const target = event?.target;
+    if (target instanceof Element && target.closest(".group-row-drag-handle, button, input, select, textarea, a")) {
+      return;
+    }
+
+    if (Date.now() < suppressOpenUntilRef.current) {
+      return;
+    }
+
+    onOpen(group);
+  }
 
   return (
     <article
-      className="group-card"
-      onClick={isInteractive ? () => onOpen(group) : undefined}
-      onKeyDown={isInteractive && typeof onKeyDown === "function" ? (event) => onKeyDown(event, group) : undefined}
-      tabIndex={isInteractive ? 0 : undefined}
-      role={isInteractive ? "button" : undefined}
-      aria-label={isInteractive ? `${group.name}${isManual ? "" : " results"}` : undefined}
+      className={`group-card ${isReorderable ? "group-card-reorderable" : ""}`.trim()}
+      onClick={allowCardOpen ? handleCardOpen : undefined}
+      onKeyDown={allowCardOpen && typeof onKeyDown === "function" ? (event) => onKeyDown(event, group) : undefined}
+      tabIndex={allowCardOpen ? 0 : undefined}
+      role={allowCardOpen ? "button" : undefined}
+      aria-label={allowCardOpen ? `${group.name}${isManual ? "" : " results"}` : undefined}
     >
       <div className="group-watermark">{group.letter || group.name.replace("Group ", "")}</div>
       <div className="group-card-header">
-        <span className="group-card-label">{group.name}</span>
-        {isReorderable ? <span className="group-card-hint">Drag teams to reorder</span> : null}
+        {isReorderable ? (
+          <button
+            type="button"
+            className="group-card-open-button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpen?.(group);
+            }}
+            onKeyDown={(event) => {
+              event.stopPropagation();
+            }}
+            aria-label={`Edit ${group.name}`}
+          >
+            {group.name}
+          </button>
+        ) : (
+          <span className="group-card-label">{group.name}</span>
+        )}
       </div>
 
       {group.table ? (
@@ -34,12 +74,22 @@ export default function GroupCard({
           qualifiedCodes={qualifiedCodes}
           className="group-standings"
           reorderable={isReorderable}
-          onReorderRows={(draggedTeamCode, targetTeamCode) =>
+          onHandlePointerDown={() => {
+            suppressCardOpen(1500);
+          }}
+          onDragStart={() => {
+            suppressCardOpen(2000);
+          }}
+          onDragEnd={() => {
+            suppressCardOpen(300);
+          }}
+          onDragCancel={() => {
+            suppressCardOpen(300);
+          }}
+          onReorderRows={(nextOrder) =>
             onReorderGroup(
               group.name,
-              group.table.map((row) => row.team_code),
-              draggedTeamCode,
-              targetTeamCode,
+              nextOrder,
             )}
         />
       ) : (

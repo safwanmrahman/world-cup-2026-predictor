@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import PredictorToolbar from "./PredictorToolbar";
 import TournamentTabs from "./TournamentTabs";
 import TournamentSummaryCards from "../dashboard/TournamentSummaryCards";
@@ -9,6 +10,7 @@ import TournamentRecap from "../recap/TournamentRecap";
 import PodiumSection from "../recap/PodiumSection";
 import TournamentStatsPanel from "../recap/TournamentStatsPanel";
 import { deriveTournamentRanking, deriveTournamentTeamStats } from "../../utils/simulationUtils";
+import { hydrateManualKnockoutMatch } from "../../manualPrediction";
 
 export default function PredictorModeView(props) {
   const {
@@ -16,6 +18,7 @@ export default function PredictorModeView(props) {
     activeManualTab,
     setActiveManualTab,
     manualTournament,
+    manualPredictionState,
     getTeam,
     manualQualifiedCodes,
     openManualGroupEditor,
@@ -38,17 +41,41 @@ export default function PredictorModeView(props) {
     teams,
     manualBracketRef,
   } = props;
+
   const championTeam = manualTournament?.champion ? getTeam(manualTournament.champion) : null;
   const runnerUpTeam = manualTournament?.runnerUp ? getTeam(manualTournament.runnerUp) : null;
   const thirdPlaceTeam = manualTournament?.thirdPlace ? getTeam(manualTournament.thirdPlace) : null;
-  const predictorTeamStats = deriveTournamentTeamStats(manualTournament, manualTournament?.thirdPlaceMatch, teams, getTeam);
-  const predictorTournamentRanking = deriveTournamentRanking(
-    manualTournament,
-    manualTournament?.thirdPlaceMatch,
-    teams,
-    getTeam,
-    predictorTeamStats,
-  );
+  const predictorTeamStats = useMemo(() => {
+    if (activeManualTab !== "stats") {
+      return [];
+    }
+
+    try {
+      return deriveTournamentTeamStats(manualTournament, manualTournament?.thirdPlaceMatch, teams, getTeam);
+    } catch (error) {
+      console.error("Failed to derive predictor team stats", error);
+      return [];
+    }
+  }, [activeManualTab, getTeam, manualTournament, teams]);
+
+  const predictorTournamentRanking = useMemo(() => {
+    if (activeManualTab !== "stats") {
+      return [];
+    }
+
+    try {
+      return deriveTournamentRanking(
+        manualTournament,
+        manualTournament?.thirdPlaceMatch,
+        teams,
+        getTeam,
+        predictorTeamStats,
+      );
+    } catch (error) {
+      console.error("Failed to derive predictor tournament ranking", error);
+      return [];
+    }
+  }, [activeManualTab, getTeam, manualTournament, predictorTeamStats, teams]);
 
   return (
     <>
@@ -108,21 +135,28 @@ export default function PredictorModeView(props) {
               onTeamHover={handleBracketTeamHover}
               onTeamLeave={handleBracketTeamLeave}
               onTeamPin={handleBracketTeamPin}
-              renderMatch={(match) => (
-                <ManualKnockoutMatchCard
-                  match={match}
-                  getTeam={getTeam}
-                  onOpenDetails={(editableMatch) => handleOpenKnockoutDetails(editableMatch, "manual")}
-                  onMatchChange={handleKnockoutMatchChange}
-                  onQuickPick={handleKnockoutQuickPick}
-                  highlightedTeamCode={activeBracketHighlightTeamCode}
-                  hoveredTeamCode={hoveredBracketTeamCode}
-                  pinnedTeamCode={pinnedBracketTeamCode}
-                  onTeamHover={handleBracketTeamHover}
-                  onTeamLeave={handleBracketTeamLeave}
-                  onTeamPin={handleBracketTeamPin}
-                />
-              )}
+              renderMatch={(match) => {
+                const rawKnockoutEntry = manualPredictionState?.knockoutMatches?.[match.match_id] ?? null;
+                const displayMatch = rawKnockoutEntry
+                  ? hydrateManualKnockoutMatch(match, rawKnockoutEntry)
+                  : match;
+
+                return (
+                  <ManualKnockoutMatchCard
+                    match={displayMatch}
+                    getTeam={getTeam}
+                    onOpenDetails={(editableMatch) => handleOpenKnockoutDetails(editableMatch, "manual")}
+                    onMatchChange={handleKnockoutMatchChange}
+                    onQuickPick={handleKnockoutQuickPick}
+                    highlightedTeamCode={activeBracketHighlightTeamCode}
+                    hoveredTeamCode={hoveredBracketTeamCode}
+                    pinnedTeamCode={pinnedBracketTeamCode}
+                    onTeamHover={handleBracketTeamHover}
+                    onTeamLeave={handleBracketTeamLeave}
+                    onTeamPin={handleBracketTeamPin}
+                  />
+                );
+              }}
             />
           ) : (
             <div className="empty-message">Loading manual prediction builder...</div>

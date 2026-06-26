@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Badge from "../shared/Badge";
 import Button from "../shared/Button";
 import TeamFlag from "../shared/TeamFlag";
-import { validateScoreInput } from "../../manualPrediction";
+import { applyPenaltyWinner, validateScoreInput } from "../../manualPrediction";
 import { getKnockoutWinnerCode } from "../../utils/knockoutUtils";
 
 function KnockoutCardHoverTooltip({ visible, x, y }) {
@@ -234,6 +234,31 @@ export function ManualKnockoutMatchCard({
     );
   }
 
+  function handlePenaltyTabClick(event, clickedCode) {
+    event.stopPropagation();
+    const normalized = applyPenaltyWinner(
+      match,
+      {
+        homeGoals: match.home_goals != null ? String(match.home_goals) : "",
+        awayGoals: match.away_goals != null ? String(match.away_goals) : "",
+        penaltiesHome: match.penalties?.home != null ? String(match.penalties.home) : "",
+        penaltiesAway: match.penalties?.away != null ? String(match.penalties.away) : "",
+        selectedOutcome: match.selected_outcome ?? null,
+        advancedTeamId: match.advanced_team ?? match.winner ?? null,
+        resultType: match.result_type ?? "PENS",
+      },
+      clickedCode,
+    );
+    const patch = {
+      advancedTeamId: normalized.advancedTeamId,
+      selectedOutcome: normalized.selectedOutcome,
+      penaltiesHome: normalized.penaltiesHome,
+      penaltiesAway: normalized.penaltiesAway,
+      resultType: normalized.resultType,
+    };
+    onMatchChange?.(match, patch);
+  }
+
   return (
     <div
       className={`bracket-match-card manual-bracket-card knockout-card-shell ${isRouteHighlighted && !isPinnedRoute ? "route-highlighted" : ""} ${isHoveredRoute ? "route-hovered" : ""} ${isPinnedRoute ? "route-selected" : ""} ${match.className ?? ""}`.trim()}
@@ -326,13 +351,13 @@ export function ManualKnockoutMatchCard({
               <div className="manual-inline-advance-actions">
                 <Button
                   className={winnerCode === match.home_team ? "button-primary manual-inline-advance-button" : "button-secondary manual-inline-advance-button"}
-                  onClick={() => onMatchChange?.(match, { advancedTeamId: match.home_team })}
+                  onClick={(event) => handlePenaltyTabClick(event, match.home_team)}
                 >
                   {home?.code ?? match.home_team}
                 </Button>
                 <Button
                   className={winnerCode === match.away_team ? "button-primary manual-inline-advance-button" : "button-secondary manual-inline-advance-button"}
-                  onClick={() => onMatchChange?.(match, { advancedTeamId: match.away_team })}
+                  onClick={(event) => handlePenaltyTabClick(event, match.away_team)}
                 >
                   {away?.code ?? match.away_team}
                 </Button>

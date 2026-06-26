@@ -1,21 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   MANUAL_SHARE_PREFIX,
-  applyGroupOverride,
   autoFillRemainingPrediction,
   buildManualTournament,
   buildPersistedManualState,
-  clearGroupOverride,
   encodePredictionHash,
   loadManualPredictionState,
   quickPickGroupMatch,
   quickPickKnockoutMatch,
-  reorderGroupOverride,
   resetManualGroups,
   resetManualKnockouts,
   resetManualPrediction,
   saveManualPredictionState,
-  toggleAdvancedOverride,
+  setGroupOverrideOrder,
   updateGroupScore,
   updateKnockoutMatch,
   updateSelectedThirdPlaces,
@@ -95,35 +92,13 @@ export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleT
     setManualPredictionState((current) => quickPickGroupMatch(current, match, teamLookup, selectedOutcome));
   }
 
-  function handleMoveGroupOverride(groupName, teamCode, direction, currentTable) {
+  function handleReorderGroup(groupName, nextOrder) {
     setManualSaved(false);
     setManualPredictionState((current) => ({
       ...current,
-      groupOverrides: applyGroupOverride(
+      groupOverrides: setGroupOverrideOrder(
         groupName,
-        currentTable.map((row) => row.team_code),
-        teamCode,
-        direction,
-        current.groupOverrides,
-      ),
-      updatedAt: Date.now(),
-    }));
-  }
-
-  function handleClearGroupOverride(groupName) {
-    setManualSaved(false);
-    setManualPredictionState((current) => clearGroupOverride(current, groupName));
-  }
-
-  function handleReorderGroup(groupName, currentOrder, draggedTeamCode, targetTeamCode) {
-    setManualSaved(false);
-    setManualPredictionState((current) => ({
-      ...current,
-      groupOverrides: reorderGroupOverride(
-        groupName,
-        currentOrder,
-        draggedTeamCode,
-        targetTeamCode,
+        nextOrder,
         current.groupOverrides,
       ),
       updatedAt: Date.now(),
@@ -157,10 +132,6 @@ export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleT
   function handleKnockoutQuickPick(match, selectedOutcome) {
     setManualSaved(false);
     setManualPredictionState((current) => quickPickKnockoutMatch(current, match, teamLookup, selectedOutcome));
-  }
-
-  function handleToggleAdvancedOverride(groupName) {
-    setManualPredictionState((current) => toggleAdvancedOverride(current, groupName));
   }
 
   function handleAutoFillRemaining() {
@@ -245,7 +216,14 @@ export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleT
 
   const manualQualifiedCodes = useMemo(() => new Set(manualTournament?.qualifiedForRoundOf32 ?? []), [manualTournament]);
   const manualRecapData = useMemo(
-    () => deriveTournamentRecapData(manualTournament, manualTournament?.thirdPlaceMatch, teams, getTeam),
+    () => {
+      try {
+        return deriveTournamentRecapData(manualTournament, manualTournament?.thirdPlaceMatch, teams, getTeam);
+      } catch (error) {
+        console.error("Failed to derive predictor recap data", error);
+        return null;
+      }
+    },
     [manualTournament, teams, getTeam],
   );
   const hasManualRecapStats = (manualRecapData?.completedMatches ?? 0) > 0;
@@ -302,13 +280,10 @@ export function usePredictorState({ groups, fixtures, teams, teamLookup, sampleT
     resetModalConfig,
     handleManualGroupScoreChange,
     handleManualGroupQuickPick,
-    handleMoveGroupOverride,
     handleReorderGroup,
-    handleClearGroupOverride,
     handleThirdPlaceToggle,
     handleKnockoutMatchChange,
     handleKnockoutQuickPick,
-    handleToggleAdvancedOverride,
     handleAutoFillRemaining,
     handleOpenResetConfirmation,
     handleCloseResetConfirmation,

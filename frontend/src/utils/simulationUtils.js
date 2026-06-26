@@ -36,6 +36,22 @@ const DARK_HORSE_STAGE_PRIORITY = {
   Champion: 6,
 };
 
+function getRecapMatchRoundLabel(match) {
+  if (!match) {
+    return "Match";
+  }
+
+  if (match.round) {
+    return match.round;
+  }
+
+  if (match.group) {
+    return "Group Stage";
+  }
+
+  return "Match";
+}
+
 function buildUpsetCandidate(match, getTeam) {
   const winnerCode = getKnockoutWinnerCode(match);
   const loserCode = getKnockoutLoserCode(match);
@@ -169,8 +185,9 @@ function buildGameOfTournamentCandidate(match, getTeam) {
     return null;
   }
 
+  const roundLabel = getRecapMatchRoundLabel(match);
   const totalGoals = (match.home_goals ?? 0) + (match.away_goals ?? 0);
-  const isKnockout = match.round !== "Group Stage";
+  const isKnockout = roundLabel !== "Group Stage";
   const tiedMatch = match.home_goals === match.away_goals;
   const highScoringTiedKnockout =
     isKnockout
@@ -188,7 +205,7 @@ function buildGameOfTournamentCandidate(match, getTeam) {
   const loser = loserCode ? getTeam(loserCode) : null;
   const upset = winner && loser ? getUpsetClassification(winner, loser) : { type: "none", gap: 0, label: "" };
   const upsetBonus = upset.type !== "none" ? 3 : 0;
-  const roundPriority = RECAP_UPSET_ROUND_PRIORITY[match.round] ?? 0;
+  const roundPriority = RECAP_UPSET_ROUND_PRIORITY[roundLabel] ?? 0;
   const excitementScore =
     totalGoals
     + (wentToPenalties ? 4 : 0)
@@ -198,6 +215,7 @@ function buildGameOfTournamentCandidate(match, getTeam) {
 
   return {
     match,
+    roundLabel,
     winner,
     loser,
     upset,
@@ -224,19 +242,19 @@ function describeGameOfTournament(candidate) {
     return "Awaiting a standout match.";
   }
 
-  if (candidate.match.round === "Final") {
+  if (candidate.roundLabel === "Final") {
     return "Final classic";
   }
 
   if (candidate.wentToPenalties) {
-    return `Penalty thriller in the ${candidate.match.round}`;
+    return `Penalty thriller in the ${candidate.roundLabel}`;
   }
 
   if (candidate.upset.type !== "none") {
-    return `Massive upset in the ${candidate.match.round}`;
+    return `Massive upset in the ${candidate.roundLabel}`;
   }
 
-  if (candidate.totalGoals >= 7 && candidate.match.round !== "Group Stage") {
+  if (candidate.totalGoals >= 7 && candidate.roundLabel !== "Group Stage") {
     return `${candidate.totalGoals}-goal knockout classic`;
   }
 
@@ -244,7 +262,7 @@ function describeGameOfTournament(candidate) {
     return `${candidate.totalGoals}-goal classic`;
   }
 
-  return `High-drama ${candidate.match.round.toLowerCase()}`;
+  return `High-drama ${candidate.roundLabel.toLowerCase()}`;
 }
 
 function formatChampionPathScore(match, championCode) {

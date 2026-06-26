@@ -7,7 +7,7 @@ World Cup 2026 Predictor is a polished full-stack tournament simulator and match
 **https://world-cup-2026-predictor-ashy.vercel.app/**
 
 Sample Tournament Simulation:
-![Sample Tournament Simulation](docs/images/sample-simulation.png)
+![Sample Tournament Simulation](docs/images/updated-simulation.png)
 
 ## Features
 

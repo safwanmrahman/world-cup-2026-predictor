@@ -284,7 +284,7 @@ export default function TournamentRecap({
                     </span>
                   </div>
                   <small>
-                    {recap.gameOfTournament.match.round}
+                    {recap.gameOfTournament.roundLabel}
                     {recap.gameOfTournament.wentToPenalties && recap.gameOfTournament.match.penalties
                       ? ` · Pens ${recap.gameOfTournament.match.penalties.home}-${recap.gameOfTournament.match.penalties.away}`
                       : ""}

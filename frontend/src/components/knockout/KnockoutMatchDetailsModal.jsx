@@ -108,7 +108,6 @@ export default function KnockoutMatchDetailsModal({
     <Modal isOpen={Boolean(match)} onClose={onClose} className="group-modal knockout-modal">
       <div className="modal-header">
         <div className="section-kicker">{mode === "simulator" ? "MATCH DETAILS" : "MATCH EDITOR"}</div>
-        <div className="knockout-round-badge">{match.round}</div>
         <h3>{match.round}</h3>
       </div>
       <div className="knockout-modal-divider" />

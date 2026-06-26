@@ -1249,6 +1249,10 @@ table {
   transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
 }
 
+.group-card-reorderable {
+  cursor: default;
+}
+
 .group-card:hover,
 .group-card:focus-visible {
   background: var(--bg-card-alt);
@@ -1273,11 +1277,23 @@ table {
   text-transform: uppercase;
 }
 
-.group-card-hint {
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
+.group-card-open-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.group-card-open-button:hover,
+.group-card-open-button:focus-visible {
+  color: var(--accent-primary);
+  outline: none;
 }
 
 .group-watermark {
@@ -1323,25 +1339,134 @@ table {
   background: rgba(17, 26, 40, 0.045);
 }
 
-.group-standings tbody tr.group-standings-draggable-row {
-  cursor: grab;
-}
-
-.group-standings tbody tr.group-standings-draggable-row:active {
-  cursor: grabbing;
-}
-
-.group-standings tbody tr.group-standings-draggable-row.dragging {
-  opacity: 0.62;
-}
-
-.group-standings tbody tr.group-standings-draggable-row.drop-target td {
-  background: color-mix(in srgb, var(--accent-primary) 9%, transparent);
-}
-
 .group-standings tbody tr.qualified td:first-child,
 .modal-standings tbody tr.qualified td:first-child {
   border-left: 3px solid var(--accent-green);
+}
+
+.group-standings-sortable {
+  display: grid;
+  gap: 0;
+}
+
+.group-standings-sortable-head,
+.group-standings-sortable-row,
+.group-standings-drag-ghost {
+  display: grid;
+  align-items: center;
+}
+
+.group-standings-sortable-head {
+  margin-bottom: 0;
+}
+
+.group-standings-sortable-body {
+  position: relative;
+}
+
+.group-standings-sortable-row {
+  min-height: 52px;
+  border-bottom: 1px solid var(--border-primary);
+  user-select: none;
+}
+
+.group-standings-sortable-row.is-alt {
+  background: var(--row-alt);
+}
+
+:root[data-theme="light"] .group-standings-sortable-row.is-alt {
+  background: rgba(17, 26, 40, 0.045);
+}
+
+.group-standings-sortable-row.is-drag-source {
+  opacity: 0.42;
+}
+
+.group-standings-sortable-row.qualified .group-standings-sortable-cell:first-child {
+  border-left: 3px solid var(--accent-green);
+}
+
+.group-standings-sortable-cell {
+  padding: 13px 12px;
+  color: var(--text-primary);
+  font-size: clamp(1rem, 0.72vw, 1.16rem);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.group-standings-sortable-head-cell {
+  color: var(--text-secondary);
+  font-size: clamp(0.84rem, 0.58vw, 0.96rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.group-standings-sortable-cell.align-center {
+  text-align: center;
+}
+
+.group-standings-sortable-cell.align-start {
+  text-align: left;
+}
+
+.group-standings-handle-cell {
+  padding: 13px 4px 13px 8px;
+  overflow: visible;
+}
+
+.group-row-drag-handle {
+  position: relative;
+  z-index: 2;
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(217, 164, 65, 0.08);
+  color: var(--accent-primary);
+  cursor: grab;
+  touch-action: none;
+  -webkit-user-drag: none;
+  box-shadow: inset 0 0 0 1px rgba(217, 164, 65, 0.14);
+  transition: color 140ms ease, background-color 140ms ease, transform 140ms ease;
+}
+
+.group-row-drag-handle:hover,
+.group-row-drag-handle:focus-visible {
+  background: rgba(217, 164, 65, 0.16);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.group-row-drag-handle:active {
+  cursor: grabbing;
+}
+
+.group-row-drag-dots,
+.group-row-drag-placeholder {
+  display: inline-block;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.08em;
+}
+
+.group-standings-drag-overlay {
+  transform: rotate(1deg);
+}
+
+.group-standings-sortable-row.is-overlay {
+  border-radius: 12px;
+  border: 1px solid rgba(217, 164, 65, 0.46);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 94%, transparent 6%), var(--bg-card-alt));
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.22),
+    inset 0 0 0 1px rgba(217, 164, 65, 0.12);
 }
 
 .group-team-cell,
@@ -1782,18 +1907,6 @@ table {
     linear-gradient(135deg, rgba(217, 164, 65, 0.16), transparent 48%),
     var(--bg-card-alt);
   box-shadow: inset 0 0 0 1px rgba(217, 164, 65, 0.22), 0 0 28px rgba(217, 164, 65, 0.16);
-}
-
-.world-cup-final-card::before {
-  content: "World Cup Final";
-  display: block;
-  margin-bottom: 8px;
-  color: var(--accent);
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-align: center;
-  text-transform: uppercase;
 }
 
 .world-cup-final-card .manual-bracket-foot {
@@ -2369,25 +2482,23 @@ table {
 }
 
 .knockout-modal .modal-header h3 {
+  position: relative;
+  display: inline-block;
   font-size: clamp(2.15rem, 2.9vw, 3rem);
   line-height: 0.96;
+  padding-bottom: 14px;
 }
 
-.knockout-round-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 36px;
-  padding: 0 16px;
+.knockout-modal .modal-header h3::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: min(100%, 220px);
+  height: 8px;
   border-radius: 999px;
-  border: 1px solid rgba(217, 164, 65, 0.24);
-  background: linear-gradient(135deg, rgba(217, 164, 65, 0.16), rgba(217, 164, 65, 0.08));
-  color: var(--accent-primary);
-  font-size: 0.78rem;
-  font-weight: 900;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  box-shadow: inset 0 0 0 1px rgba(217, 164, 65, 0.08);
+  background: linear-gradient(90deg, rgba(217, 164, 65, 0.82), rgba(217, 164, 65, 0.18));
+  box-shadow: 0 0 20px rgba(217, 164, 65, 0.16);
 }
 
 .knockout-modal-body {
@@ -2858,35 +2969,7 @@ table {
   margin-top: 18px;
 }
 
-.manual-subheading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.text-button,
-.icon-button,
-.chip-button {
-  border: 1px solid var(--border-primary);
-  background: transparent;
-  color: var(--text-primary);
-}
-
-.text-button {
-  border-radius: 999px;
-  padding: 8px 12px;
-  font-weight: 700;
-}
-
-.manual-group-fixtures,
-.manual-order-stack {
+.manual-group-fixtures {
   display: grid;
   gap: 10px;
 }
@@ -2896,8 +2979,7 @@ table {
   gap: 12px;
 }
 
-.manual-group-fixture,
-.manual-order-row {
+.manual-group-fixture {
   display: grid;
   align-items: center;
   gap: 12px;
@@ -2913,16 +2995,14 @@ table {
   border-radius: 18px;
 }
 
-.manual-team-name,
-.manual-order-team {
+.manual-team-name {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
 }
 
-.manual-team-name span,
-.manual-order-team span {
+.manual-team-name span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2995,14 +3075,8 @@ table {
   font-weight: 800;
 }
 
-.manual-group-modal .manual-subheading {
-  margin-bottom: 16px;
-  font-size: 0.88rem;
-}
-
 .manual-group-modal .manual-pick-button span,
-.manual-group-modal .manual-draw-button,
-.manual-group-modal .manual-order-team span {
+.manual-group-modal .manual-draw-button {
   font-size: 1.08rem;
 }
 
@@ -3015,32 +3089,6 @@ table {
   font-weight: 900;
 }
 
-.manual-order-row {
-  grid-template-columns: auto minmax(0, 1fr) auto;
-}
-
-.manual-order-rank {
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-  font-weight: 800;
-}
-
-.manual-order-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.icon-button {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  font-weight: 900;
-}
 
 .third-place-selector {
   display: grid;
@@ -3220,17 +3268,6 @@ table {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.chip-button {
-  border-radius: 12px;
-  padding: 10px 12px;
-  font-weight: 700;
-}
-
-.chip-button.active {
-  background: rgba(217, 164, 65, 0.12);
-  border-color: var(--accent-primary);
 }
 
 .recap-panel {

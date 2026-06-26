@@ -54,6 +54,10 @@ export function deriveKnockoutWinnerCode(
     return awayCode;
   }
 
+  if (fallbackWinner) {
+    return fallbackWinner;
+  }
+
   if (
     penaltiesHome != null
     && penaltiesAway != null
@@ -77,7 +81,7 @@ export function getKnockoutWinnerCode(match) {
     match.away_goals,
     match.penalties?.home ?? null,
     match.penalties?.away ?? null,
-    match.winner ?? null,
+    match.advanced_team ?? match.winner ?? null,
   );
 }
 

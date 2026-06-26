@@ -106,9 +106,11 @@ function App() {
     activeManualTab: predictor.activeManualTab,
     setActiveManualTab: predictor.setActiveManualTab,
     manualTournament: predictor.manualTournament,
+    manualPredictionState: predictor.manualPredictionState,
     getTeam: tournament.getTeam,
     manualQualifiedCodes: predictor.manualQualifiedCodes,
     openManualGroupEditor: predictor.openManualGroupEditor,
+    handleReorderGroup: predictor.handleReorderGroup,
     thirdPlaceDescription: "Predictor mode auto-selects the best eight third-place teams using points, goal difference, and goals scored, just like simulator mode.",
     activeBracketHighlightTeamCode: tournament.activeBracketHighlightTeamCode,
     hoveredBracketTeamCode: tournament.hoveredBracketTeamCode,
@@ -167,13 +169,9 @@ function App() {
         group={predictor.manualTournament?.groupResults.find((group) => group.name === predictor.selectedManualGroup) ?? null}
         qualifiedCodes={predictor.manualQualifiedCodes}
         getTeam={tournament.getTeam}
-        overrideVisible={predictor.manualPredictionState?.advancedOverrideGroups?.includes(predictor.selectedManualGroup ?? "")}
         onClose={() => predictor.setSelectedManualGroup(null)}
-        onToggleOverride={predictor.handleToggleAdvancedOverride}
         onScoreChange={predictor.handleManualGroupScoreChange}
         onQuickPick={predictor.handleManualGroupQuickPick}
-        onMoveOverride={predictor.handleMoveGroupOverride}
-        onClearOverride={predictor.handleClearGroupOverride}
       />
 
       <ResetConfirmationModal
